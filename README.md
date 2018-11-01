@@ -1,2 +1,4 @@
-# CoB-CE
-RMIT College of Business Course Enhancement
+# CoB
+RMIT College of Business 
+Academic Development Group
+Learning & Teaching
