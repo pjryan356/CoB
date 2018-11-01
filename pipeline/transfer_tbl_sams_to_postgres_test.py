@@ -1,24 +1,36 @@
-## EXAMPLES OF USING SAMS HELPER FUNCTIONS
-# For Peter August 2018
-# Demonstrates the use of the three different connection types
-# PUT THE PASSWORD STRING IN
+## Test script to upload data from SAMS into local db
+# Peter Ryan Nov 2018
 
-from sams_helper_functions import *
 import pandas as pd
 import tabulate
-from sams_queries import *
-from postgres_queries import (qry_create_table_course_location,
-                              qry_add_comment,
-                              qry_drop_table)
 import datetime as dt
 import psycopg2
 
+sys.path.append('c:\\Peter\\GitHub\\CoB\\')
+
+import general.RMIT_colours as rc
+from general.sams_queries import *
+
+from general.db_helper_functions import(
+  connect_to_postgres_db
+)
+
+from general.postgres_queries import (
+  qry_create_table_course_location,
+  qry_add_comment,
+  qry_drop_table)
+
+# Input parameters
+year = 2019
+semester = 1
+level = 'NA'
+
 # Create connections
-password_str = ''
-# PUT PASSWORD HERE!
+postgres_pw = input("Postgres Password: ")
+sams_pw = input("SAMS Password: ")
 
 # create sams engine this is the connection to the oracle database
-sams_engine = return_sams_engine(password_str=password_str)
+sams_engine = return_sams_engine(password_str=sams_pw)
 
 result_dataframe = pd.read_sql(sql=qry_sams_course_locations(), con=sams_engine)
 
@@ -29,10 +41,9 @@ print(tabulate.tabulate(result_dataframe, headers='keys'))
 con_string = "host='localhost' " \
              "dbname='postgres' " \
              "user='pjryan' " \
-             "password='Grover3!'"
+             "password='{}'".format(postgres_pw)
 
 conn, cur = connect_to_postgres_db(con_string)
-
 
 try:
   cur.execute(qry_drop_table(schema='ms', table='course_locations'))
@@ -47,10 +58,6 @@ try:
   
 except (Exception, psycopg2.DatabaseError) as error:
   print(error)
-
-year = 2019
-semester = 1
-level = 'NA'
 
 for i, r in result_dataframe.iterrows():
   qry = '''

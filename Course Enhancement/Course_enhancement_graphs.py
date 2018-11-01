@@ -1,14 +1,15 @@
-import RMIT_colours as rc
 import plotly
-
 from tabulate import tabulate
-
 import plotly.graph_objs as go
 import pandas as pd
 import traceback
-
-from Course_enhancement_functions import get_colour
 import dash_html_components as html
+
+import sys
+sys.path.append('c:\\Peter\\GitHub\\CoB\\')
+
+import general.RMIT_colours as rc
+from Course_enhancement_functions import get_colour
 
 colourList = [rc.RMIT_Red,
               rc.RMIT_Green,

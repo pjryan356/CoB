@@ -1,25 +1,33 @@
-import RMIT_colours as rc
 import base64
-import sys
 import flask
-
-sys.path.append('H:\\Data\\CoB Database\\pipeline\\')
-
 import dash
 import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output
 
-from Course_enhancement_graphs import (line_graph_measure_surveys,
-                                       generate_ces_pd_table,
-                                       line_graph_gtsq_surveys,
-                                       generate_ces_pd_table,
-                                       graphCourseProgramPie
-                                       )
-from Course_enhancement_functions import (get_term_name,
-                                          get_course_pop,
-                                          connect_to_postgres_db,
-                                          db_extract_query_to_dataframe)
+import sys
+sys.path.append('c:\\Peter\\GitHub\\CoB\\')
+
+import general.RMIT_colours as rc
+
+from Course_enhancement_graphs import (
+  line_graph_measure_surveys,
+  generate_ces_pd_table,
+  line_graph_gtsq_surveys,
+  generate_ces_pd_table,
+  graphCourseProgramPie
+)
+
+from Course_enhancement_functions import (
+  get_term_name,
+  get_course_pop
+)
+
+from general.db_helper_functions import (
+  connect_to_postgres_db,
+  db_extract_query_to_dataframe
+)
+
 
 '''
 This script is designed to produce the Course Enhancement Data Packs.
@@ -1092,7 +1100,7 @@ def create_page(course_code):
 
 
 # Upload css formats
-css_directory = 'H:\\Data\\CoB Database\\pipeline\\static\\'
+css_directory = 'C:\\Peter\\GitHub\\CoB\\\static\\'
 stylesheets = ['bWLwgP.css', 'remove_undo.css']
 
 @app.server.route('/<stylesheet>')

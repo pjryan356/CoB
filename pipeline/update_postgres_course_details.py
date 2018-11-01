@@ -1,26 +1,29 @@
-## EXAMPLES OF USING SAMS HELPER FUNCTIONS
-# For Peter August 2018
-# Demonstrates the use of the three different connection types
-# PUT THE PASSWORD STRING IN
+## Update script to upload course detials table in local db
+# Peter Ryan Nov 2018
 
-from sams_helper_functions import *
-import pandas as pd
-import tabulate
-from sams_queries import *
-from postgres_queries import (qry_create_table_course_location,
-                              qry_add_comment,
-                              qry_drop_table,
-                              qry_delete_after_term)
 import datetime as dt
 import psycopg2
 from sqlalchemy import (create_engine, orm)
+import pandas as pd
+import tabulate
 
+import sys
+sys.path.append('c:\\Peter\\GitHub\\CoB\\')
+
+import general.RMIT_colours as rc
+from general.sams_queries import *
+from general.sams_helper_functions import *
+from general.postgres_queries import (
+  qry_create_table_course_location,
+  qry_add_comment,
+  qry_drop_table,
+  qry_delete_after_term)
 
 # Get inputs
 password_str = input("SAMS Password: ")
+postgres_pw = input("Postgres Password: ")
 st_term = input("Update from Start term: ")
 end_term = input("Update until End term: ")
-postgres_pw = input("Postgres Password: ")
 
 # Create connections
 # create sams engine this is the connection to the oracle database

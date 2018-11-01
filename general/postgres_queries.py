@@ -1,17 +1,12 @@
-## EXAMPLES OF USING SAMS HELPER FUNCTIONS
-# For Peter August 2018
-# Demonstrates the use of the three different connection types
-# PUT THE PASSWORD STRING IN
+## Various queries for the CoB postgres database
+# Peter Ryan Nov 2018
 
-def convert_list_string_for_sql(list1):
-  txt = '('
-  for str in list1:
-    txt += "'{0}', ".format(str)
-  # Drop final comma and add )
-  txt = txt[:-2]
-  txt += ') '
-  return txt
+import sys
+sys.path.append('c:\\Peter\\GitHub\\CoB\\')
 
+from general.db_helper_functions import (
+  convert_list_string_for_sql
+)
 
 def qry_drop_table(schema, table):
   qry = 'DROP TABLE {}.{};'.format(schema, table)
