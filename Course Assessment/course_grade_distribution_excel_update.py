@@ -2,21 +2,15 @@
 # Peter Ryan Nov 2018
 
 import pandas as pd
-from tabulate import tabulate
 import openpyxl
 import datetime as dt
-import psycopg2
-from sqlalchemy import (create_engine, orm)
 import shutil
-import getpass
 
+import sys
+sys.path.append('c:\\Peter\\GitHub\\CoB\\')
 from general.sams_helper_functions import *
 from general.sams_queries import *
-from general.postgres_queries import (
-  qry_create_table_course_location,
-  qry_add_comment,
-  qry_drop_table,
-  qry_delete_after_term)
+
 
 def copy_rename(old_file_name, new_file_name):
   import os
@@ -177,7 +171,9 @@ for i_course, r_course in df_courses.iterrows():
       sheet.cell(row=5 - i, column=5).value = r['cr']
       sheet.cell(row=5 - i, column=6).value = r['di']
       sheet.cell(row=5 - i, column=7).value = r['hd']
-  
+
+  # protect sheet
+  sheet.protection.set_password('ADG')
   # Save sheet
   filename = '{0}\\{0}_{1}_grade_distribution_{2}.xlsx'.format(r_course['school_code'], r_course['course_code'], r_course['term_name'])
   wb.save(directory+filename)
