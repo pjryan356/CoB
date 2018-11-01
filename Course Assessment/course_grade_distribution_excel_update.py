@@ -128,6 +128,7 @@ current_year = int(input("Current year: "))
 current_semester = int(input("Current semester (1 or 2): "))
 equivalent_semesters = bool(input("Use equivalent semester (True or False): "))
 st_year = int(input("Earliest Year: "))
+sheet_pw = input("Select Password: ")
 
 start = dt.datetime.now()
 # Get all courses
@@ -173,7 +174,7 @@ for i_course, r_course in df_courses.iterrows():
       sheet.cell(row=5 - i, column=7).value = r['hd']
 
   # protect sheet
-  sheet.protection.set_password('ADG')
+  sheet.protection.set_password('{}'.format(sheet_pw))
   # Save sheet
   filename = '{0}\\{0}_{1}_grade_distribution_{2}.xlsx'.format(r_course['school_code'], r_course['course_code'], r_course['term_name'])
   wb.save(directory+filename)

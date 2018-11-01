@@ -4,6 +4,7 @@ import dash
 import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output
+from tabulate import tabulate
 
 import sys
 sys.path.append('c:\\Peter\\GitHub\\CoB\\')
@@ -173,9 +174,8 @@ logo = base64.b64encode(open(image_filename, 'rb').read())
 image_filename = 'C:\\Peter\\CoB\\logos\\CES_scale.png'  # replace with your own image
 ces_scale_image = base64.b64encode(open(image_filename, 'rb').read())
 
+
 '''------------------------------ Helper functions -----------------------------------'''
-
-
 def get_last_semester(year, semester):
   # returns the previous year and semester based on a 2 semester year
   if semester != 1:
@@ -193,6 +193,7 @@ def list_to_text(obList):
     txt += "'{}',".format(ob)
   txt = txt[:-1] + ")"
   return txt
+
 
 def get_term_code_list(year, semester):
   # returns a list of major term code for a give year/semester
@@ -370,9 +371,9 @@ def get_course_prg_enrl(course_list, year, semester, cur, tbl, schema='enrolment
   ### Get microsurgery courses enrolments
   qry = " SELECT \n" \
         "	  enrl.term_code, enrl.course_code, \n" \
-        "   CASE WHEN pd.college = 'BUS' THEN enrl.program_code ELSE 'Not CoB' END AS program_code, \n" \
+        "   enrl.program_code, \n" \
         "   enrl.population, \n" \
-        "   CASE WHEN pd.college = 'BUS' THEN pd.program_name ELSE 'Not CoB' END AS program_name, \n" \
+        "   pd. program_name, \n" \
         "   CASE WHEN pd.college = 'BUS' THEN pd.school_code ELSE 'Not CoB' END AS school_code, \n" \
         "   CASE WHEN pd.college = 'BUS' THEN pd.school_name ELSE 'Not CoB' END AS school_name, \n" \
         "   COALESCE(bsd.school_name_short, 'Not CoB') AS school_name_short, \n" \
@@ -475,7 +476,7 @@ def get_course_data(df1, course_code):
   except:
     return None
 
-def make_program_page(course_code, df1_prg_ces, df1_enrol, term_code):
+def make_program_page(course_code, df1_prg_ces, df1_enrol, term_code, program_codes):
   # Function that creates the course Program Page for given course_code
   div = html.Div(
     [
@@ -499,8 +500,8 @@ def make_program_page(course_code, df1_prg_ces, df1_enrol, term_code):
           html.Div(  # Pie - Program
             [
               dcc.Graph(
-                id='coll-pie-graph',
-                figure=graphCourseProgramPie(df1_enrol, 'college'),
+                id='prg-pie-graph',
+                figure=graphCourseProgramPie(df1_enrol, 'program'),
                 style={'border': 'solid'},
               )
             ],
@@ -519,8 +520,8 @@ def make_program_page(course_code, df1_prg_ces, df1_enrol, term_code):
           html.Div(  # Pie - College
             [
               dcc.Graph(
-                id='prog-pie-graph',
-                figure=graphCourseProgramPie(df1_enrol, 'program'),
+                id='col-pie-graph',
+                figure=graphCourseProgramPie(df1_enrol, 'college'),
                 style={'border': 'solid'},
               )
             ],
@@ -545,6 +546,7 @@ def make_program_page(course_code, df1_prg_ces, df1_enrol, term_code):
                 figure=line_graph_program_measure_surveys(
                   df1_prg_ces,
                   course_code,
+                  program_codes,
                   measure='osi',
                   start_year=start_year,
                   end_year=end_year, semester=None,
@@ -561,6 +563,7 @@ def make_program_page(course_code, df1_prg_ces, df1_enrol, term_code):
                 figure=line_graph_program_measure_surveys(
                   df1_prg_ces,
                   course_code,
+                  program_codes,
                   measure='gts',
                   start_year=start_year,
                   end_year=end_year, semester=None,
@@ -588,13 +591,15 @@ def make_course_pack(course_code):
   df1_enrol = get_course_data(df_ce_prg_enrl, course_code)
   df1_prg_ces = get_course_data(df_ce_prg_ces, course_code)
   
-  
-  
   # get additional course parameters from data frames
   try:
     term_code = df1_enrol['term_code'].tolist()[-1]
   except:
     term_code = '1910'
+  
+  # get top 5 programs in most recent semester
+  program_codes = df1_enrol.sort_values('population', ascending=False).head(n=5)['program_code'].tolist()
+  print(program_codes)
   
   try:
     level = df1_ces['survey_level'].tolist()[-1]
@@ -726,7 +731,7 @@ def make_course_pack(course_code):
         # First row - Page Header
         make_header_div(df1_ce),
         # Second row - Student distribution Heading
-        make_program_page(course_code, df1_prg_ces, df1_enrol, term_code),
+        make_program_page(course_code, df1_prg_ces, df1_enrol, term_code, program_codes),
       ],
       style={'width': '29.4cm',
              'height': '19.9cm',

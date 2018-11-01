@@ -150,14 +150,12 @@ def line_graph_measure_surveys(df1,
 
 def line_graph_program_measure_surveys(df1,
                                        course_code,
+                                       program_codes,
                                        measure='gts',
                                        start_year=2014,
                                        end_year=2018, semester=None,
                                        width=520, height=320):
-  # get top 5 programs in most recent semester
   f_df = df1.loc[df1['course_code'] == course_code]
-  f_df1 = f_df.loc[(f_df['year'] == end_year) & (f_df['semester'] == 1)]
-  program_codes = f_df1.sort_values('population', ascending=False).head(n=5)['program_code'].tolist()
   
   # all traces for plotly
   traces = []
@@ -183,11 +181,10 @@ def line_graph_program_measure_surveys(df1,
   colours = [rc.RMIT_DarkBlue,
              rc.RMIT_Green,
              rc.RMIT_Red,
-             rc.RMIT_Lavender,
-             rc.RMIT_Blue]
+             rc.RMIT_Blue,
+             rc.RMIT_Lavender]
   
   for program_code in program_codes:
-    
     data_label = []
     y = []
     label_check += 1
@@ -201,7 +198,7 @@ def line_graph_program_measure_surveys(df1,
         except:
           val = None
         y.append(val)
-    ### Editted up to here
+
     trace = go.Scatter(
       x=x,
       y=y,
@@ -372,6 +369,8 @@ def graphCourseProgramPie(df1, category):
       marker=dict(colors=df1['college_colour']),
       hovertext=df1['college_name'],
       hoverinfo='hovertext',
+      direction="clockwise",
+      rotation=0,
       hole=.3,
       opacity=1,
       showlegend=True,
@@ -392,19 +391,28 @@ def graphCourseProgramPie(df1, category):
       marker=dict(colors=df1['school_colour']),
       hovertext=df1['school_name'],
       hoverinfo='hovertext',
+      direction="clockwise",
+      rotation=0,
       hole=.3,
       opacity=1,
       showlegend=True,
       textinfo='none'
     )]
+
+  colours = [rc.RMIT_DarkBlue,
+             rc.RMIT_Green,
+             rc.RMIT_Red,
+             rc.RMIT_Blue,
+             rc.RMIT_Lavender,
+             rc.RMIT_Orange]
   
   if category == 'program':
     df1.sort_values('population')
     total = df1['population'].sum()
     prg_count = len(df1)
     title = 'By Program'
-    # Limit to 9 program_entries
-    df1_large = df1.nlargest(9, 'population')
+    # Limit to 5 program_entries
+    df1_large = df1.nlargest(5, 'population')
 
     # create None dataframe
     other_total = total - df1_large['population'].sum()
@@ -425,16 +433,18 @@ def graphCourseProgramPie(df1, category):
 
     df1_large = df1_large.append(d_other, ignore_index=True)
     traces = [go.Pie(
-        labels=df1_large['program_code'],
-        values=df1_large['population'],
-        hovertext=df1_large['program_name'],
-        hoverinfo='hovertext',
-        hole=.3,
-        opacity=1,
-        showlegend=True,
-        textinfo='none'
+      labels=df1_large['program_code'],
+      values=df1_large['population'],
+      hovertext=df1_large['program_name'],
+      hoverinfo='hovertext',
+      marker=dict(colors=colours),
+      hole=.3,
+      direction="clockwise",
+      rotation=0,
+      opacity=1,
+      showlegend=True,
+      textinfo='none'
     )]
-    
 
   layout = go.Layout(
     title=title,
@@ -450,7 +460,6 @@ def graphCourseProgramPie(df1, category):
        'showarrow': False}
     ]
   )
-  
   
   fig = {'data': traces,
          'layout': layout}
