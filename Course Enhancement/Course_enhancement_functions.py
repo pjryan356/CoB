@@ -128,16 +128,28 @@ def get_colour(measure, level = 'HE'):
   
   return rc.RMIT_Black
 
-def get_course_pop(df1, term_code, course_code):
-  try:
-    df1_filter = df1.loc[(df1['term_code'] == term_code) &
-                         (df1['course_code'] == course_code)]
+def get_course_pop(df1, course_code, term_code=None, year=None, semester=None):
+  
+  if term_code != None:
+    try:
+      df1_filter = df1.loc[
+        (df1['term_code'] == term_code) &
+        (df1['course_code'] == course_code)]
+      pop = int(df1_filter['population'].agg('sum'))
+      return (pop)
+    except:
+      return None
+  else:
+    try:
+      df1_filter = df1.loc[
+        (df1['year'] == year) &
+        (df1['semester'] == semester) &
+        (df1['course_code'] == course_code)]
     
-    pop = int(df1_filter['population'].agg('sum'))
-    return (pop)
-  except:
-    return None
-
+      pop = int(df1_filter['population'].agg('sum'))
+      return (pop)
+    except:
+      return None
 
 
 

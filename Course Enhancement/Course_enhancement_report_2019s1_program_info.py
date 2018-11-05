@@ -4,6 +4,7 @@ import dash
 import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output
+from collections import OrderedDict
 from tabulate import tabulate
 
 import sys
@@ -366,6 +367,53 @@ def get_course_comments_themes(course_list, year, semester, cur, tbl, schema='co
   
   return db_extract_query_to_dataframe(qry, cur, print_messages=False)
 
+def get_course_program_ces_data(course_list, start_year, end_year, cur, tbl, schema='ces'):
+  # Returns a dataframe with CES data for courses in course list
+  qry = ' SELECT \n' \
+        '   crse_prg.*, \n' \
+        '   pd.program_name, \n' \
+        "   CASE WHEN pd.college = 'BUS' THEN pd.school_code ELSE 'Not CoB' END AS school_code, \n" \
+        "   COALESCE(bsd.school_name_short, 'Not CoB') AS school_name_short, \n" \
+        "   CASE WHEN pd.college = 'BUS' THEN bsd.html ELSE '#FAC800' END AS school_colour, \n" \
+        "   pd.college, \n" \
+        "   col.college_name_short, \n" \
+        "   col.html AS college_colour \n " \
+        ' FROM ( \n' \
+        '   SELECT \n' \
+        "     year, semester, level,  \n" \
+        "     course_code, program_code, \n" \
+        '     reliability, \n' \
+        '     round(gts, 1) AS gts, round(gts_mean, 1) AS gts_mean, \n' \
+        '     round(osi, 1) AS osi, round(osi_mean, 1) AS osi_mean, \n' \
+        '     population, osi_count, gts_count \n' \
+        '   FROM {0}.{1} \n' \
+        "   WHERE SPLIT_PART(course_code,'-', 1) IN {2} \n" \
+        "     AND year >= {3} \n" \
+        "     AND year <= {4} \n" \
+        "   ) crse_prg \n" \
+        " LEFT JOIN ( \n" \
+        "   SELECT program_code, program_name, school_code, college \n" \
+        "   FROM lookups.tbl_program_details \n" \
+        "   ) pd ON (crse_prg.program_code = pd.program_code) \n" \
+        " LEFT JOIN ( \n" \
+        "   SELECT sd.school_code, sd.school_name_short, sc.html \n" \
+        "   FROM (SELECT  school_code, school_name_short, colour FROM lookups.tbl_bus_school_details) sd \n" \
+        "   LEFT JOIN (SELECT colour_name, html FROM lookups.tbl_rmit_colours) sc \n" \
+        "     ON sc.colour_name = sd.colour \n" \
+        "   ) bsd ON (pd.school_code=bsd.school_code)\n" \
+        " LEFT JOIN ( \n" \
+        "   SELECT cd.college_code, cd.college_name, cd.college_name_short, rc.html \n" \
+        " 	FROM lookups.tbl_rmit_college_details cd, lookups.tbl_rmit_colours rc \n" \
+        "   WHERE rc.colour_name = cd.colour \n" \
+        "   ) col ON (pd.college = col.college_code) \n" \
+        " ORDER BY course_code, program_code, year, semester; \n" \
+        "".format(schema, tbl,
+                  list_to_text(course_list),
+                  start_year,
+                  end_year)
+  return db_extract_query_to_dataframe(qry, cur, print_messages=False)
+
+
 
 def get_course_prg_enrl(course_list, year, semester, cur, tbl, schema='enrolments'):
   ### Get microsurgery courses enrolments
@@ -431,9 +479,9 @@ df_ce_comment_themes = get_course_comments_themes(df_ce['course_code_alt'].tolis
                                                   cur=postgres_cur,
                                                   tbl='tbl_course_thematic', schema='course_enhancement')
 
-df_ce_prg_enrl = get_course_prg_enrl(df_ce['course_code_alt'].tolist(),
-                                     enrl_year, enrl_semester,
-                                     cur=postgres_cur, tbl='tbl_course_program_pop', schema='enrolments')
+#df_ce_prg_enrl = get_course_prg_enrl(df_ce['course_code_alt'].tolist(),
+#                                     enrl_year, enrl_semester,
+#                                     cur=postgres_cur, tbl='tbl_course_program_pop', schema='enrolments')
 
 df_ce_prg_ces = get_course_program_ces_data(df_ce['course_code_alt'].tolist(),
                                             start_year,
@@ -476,7 +524,7 @@ def get_course_data(df1, course_code):
   except:
     return None
 
-def make_program_page(course_code, df1_prg_ces, df1_enrol, term_code, program_codes):
+def make_program_page(course_code, df1_prg_ces, df1_enrol, program_codes):
   # Function that creates the course Program Page for given course_code
   div = html.Div(
     [
@@ -484,9 +532,12 @@ def make_program_page(course_code, df1_prg_ces, df1_enrol, term_code, program_co
       html.Div(
         [
           html.P(
-            [dcc.Markdown('**Student cohorts ({})** '
-                          '\u00A0 Population: {}'.format(get_term_name(term_code),
-                                                         get_course_pop(df1_enrol, term_code, course_code)))
+            [dcc.Markdown('**Student cohorts ({} Semester {})** '
+                          '\u00A0 Population: {}'
+                          ''.format(end_year, semester,
+                                    get_course_pop(df1_enrol, course_code,
+                                                   year=end_year,
+                                                   semester=semester)))
              ],
             style={'fontSize': 24,
                    'margin-left': 20, })
@@ -588,18 +639,13 @@ def make_course_pack(course_code):
   df1_ces = get_course_data(df_ce_ces, course_code)
   df1_comments = get_course_data(df_ce_comments, course_code)
   df1_themes = get_course_data(df_ce_comment_themes, course_code)
-  df1_enrol = get_course_data(df_ce_prg_enrl, course_code)
   df1_prg_ces = get_course_data(df_ce_prg_ces, course_code)
   
-  # get additional course parameters from data frames
-  try:
-    term_code = df1_enrol['term_code'].tolist()[-1]
-  except:
-    term_code = '1910'
-  
   # get top 5 programs in most recent semester
-  program_codes = df1_enrol.sort_values('population', ascending=False).head(n=5)['program_code'].tolist()
-  print(program_codes)
+  df1_enrl = df1_prg_ces.loc[(df1_prg_ces['year'] == end_year) &
+                             (df1_prg_ces['semester'] == semester)]
+  program_codes = df1_enrl.sort_values('population', ascending=False).head(n=5)['program_code'].tolist()
+  program_codes = list(OrderedDict.fromkeys(program_codes))
   
   try:
     level = df1_ces['survey_level'].tolist()[-1]
@@ -731,7 +777,7 @@ def make_course_pack(course_code):
         # First row - Page Header
         make_header_div(df1_ce),
         # Second row - Student distribution Heading
-        make_program_page(course_code, df1_prg_ces, df1_enrol, term_code, program_codes),
+        make_program_page(course_code, df1_prg_ces, df1_enrl, program_codes),
       ],
       style={'width': '29.4cm',
              'height': '19.9cm',
@@ -907,7 +953,8 @@ def make_course_pack(course_code):
                   [dcc.Markdown(
                     'The **pie charts** show what program, school and college the students in the course are from.'
                     ' Non CoB programs are grouped together.'
-                    ' The pie charts are based on {} enrolments.'.format(get_term_name(term_code)))
+                    ' The pie charts are based on {} Semester {} survey population.'
+                    ''.format(end_year, semester))
                   ],
                   style={'textAlign': 'left',
                          'font-size': 16,
@@ -933,9 +980,9 @@ def make_course_pack(course_code):
                 html.P(
                   [dcc.Markdown(
                     'The **OSI and GTS Data by program** are graphed for the cohorts from the 5 largest programs.'
-                    ' The 5 largest program are determined using {} enrolments.'
+                    ' The 5 largest program are determined using {} Semester {} survey population.'
                     ' These charts can help to determine how different cohorts view the course'
-                    ''.format(get_term_name(term_code)))
+                    ''.format(end_year, semester))
                   ],
                   style={'textAlign': 'left',
                          'font-size': 16,
@@ -947,8 +994,8 @@ def make_course_pack(course_code):
                 ),
                 html.P(
                     [dcc.Markdown(
-                      'The **Qualitative Data** from the {} CES is on the following pages.'
-                      ''.format(get_term_name(term_code, short=True)))
+                      'The **Qualitative Data** from the {} S{} CES is on the following pages.'
+                      ''.format(comments_year, comments_semester))
                     ],
                     style={'textAlign': 'left',
                            'font-size': 16,
@@ -1005,7 +1052,8 @@ def make_course_pack(course_code):
         html.Div(
           [
             html.P(
-              [dcc.Markdown('**Qualitative data ({})**'.format(get_term_name(term_code)))],
+              [dcc.Markdown('**Qualitative data ({} Semester {})**'
+                            ''.format(comments_year, comments_semester))],
               style={'fontSize': 24,
                      'margin-left': 20, })
           ],

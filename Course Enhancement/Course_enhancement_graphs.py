@@ -360,7 +360,7 @@ def graphCourseProgramPie(df1, category):
                        'college_name_short',
                        'college_colour'],
                       as_index=False).agg({'population': sum})
-    total = df1['population'].sum()
+    total = int(df1['population'].sum())
     title = 'By College'
     
     traces = [go.Pie(
@@ -582,7 +582,116 @@ def generate_ces_pd_table(df1, course_code):
   return fig
 
 
-
+def graphCourseProgramPie(df1, category):
+  '''
+  Produce a pie chart of program population in a course
+  :param df_prg: dataframe containing course measures by program
+  :return: pier chart of course program proportions
+  '''
+  
+  if category == 'college':
+    df1 = df1.groupby(['college',
+                       'college_name_short',
+                       'college_colour'],
+                      as_index=False).agg({'population': sum})
+    total = df1['population'].sum()
+    title = 'By College'
+    
+    traces = [go.Pie(
+      labels=df1['college_name_short'],
+      values=df1['population'],
+      marker=dict(colors=df1['college_colour']),
+      direction="clockwise",
+      rotation=0,
+      hole=.3,
+      opacity=1,
+      showlegend=True,
+      textinfo='none'
+    )]
+  
+  if category == 'school':
+    df1 = df1.groupby(['school_code',
+                       'school_name_short',
+                       'school_colour'],
+                      as_index=False).agg({'population': sum})
+    total = df1['population'].sum()
+    title = 'By School'
+    traces = [go.Pie(
+      labels=df1['school_name_short'],
+      values=df1['population'],
+      marker=dict(colors=df1['school_colour']),
+      direction="clockwise",
+      rotation=0,
+      hole=.3,
+      opacity=1,
+      showlegend=True,
+      textinfo='none'
+    )]
+  
+  colours = [rc.RMIT_DarkBlue,
+             rc.RMIT_Green,
+             rc.RMIT_Red,
+             rc.RMIT_Blue,
+             rc.RMIT_Lavender,
+             rc.RMIT_Orange]
+  
+  if category == 'program':
+    df1.sort_values('population')
+    total = df1['population'].sum()
+    prg_count = len(df1)
+    title = 'By Program'
+    # Limit to 5 program_entries
+    df1_large = df1.nlargest(5, 'population')
+    
+    # create None dataframe
+    other_total = total - df1_large['population'].sum()
+    other_prg_count = prg_count - len(df1_large)
+    d_other = {'term_code': 'NA',
+               'course_code': 'NA',
+               'program_code': 'Other ({})'.format(other_prg_count),
+               'population': other_total,
+               'program_name': 'Other ({} programs)'.format(other_prg_count),
+               'school_code': 'NA',
+               'school_name_short': 'NA',
+               'school_colour': 'NA',
+               'college': 'NA',
+               'college_name_short': 'NA',
+               'college_colour': 'NA'}
+    
+    df1_large = df1_large.append(d_other, ignore_index=True)
+    traces = [go.Pie(
+      labels=df1_large['program_code'],
+      values=df1_large['population'],
+      hovertext=df1_large['program_name'],
+      hoverinfo='hovertext',
+      marker=dict(colors=colours),
+      hole=.3,
+      direction="clockwise",
+      rotation=0,
+      opacity=1,
+      showlegend=True,
+      textinfo='none'
+    )]
+  
+  layout = go.Layout(
+    title=title,
+    showlegend=True,
+    width=335,
+    height=250,
+    margin=dict(b=10, l=10, r=100, t=35),
+    annotations=[
+      {'font': {'size': 16},
+       'text': '{}<br>ppl'.format(total),
+       'x': 0.5,
+       'y': 0.5,
+       'showarrow': False}
+    ]
+  )
+  
+  fig = {'data': traces,
+         'layout': layout}
+  
+  return fig
 
 
 
