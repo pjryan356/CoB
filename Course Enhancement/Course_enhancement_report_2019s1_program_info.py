@@ -280,21 +280,22 @@ def get_course_enhancement_list(year, semester, cur, tbl, schema='course_enhance
   return db_extract_query_to_dataframe(qry, cur, print_messages=False)
 
 
-def get_course_ces_data(course_list, start_year, end_year, cur, tbl, schema='ces_summaries'):
+def get_course_ces_data(course_list, start_year, end_year, cur, tbl='vw1_course_summaries_fixed', schema='ces'):
   # Returns a dataframe with CES data for courses in course list
   qry = ' SELECT \n' \
-        "   survey_year, survey_semester, survey_level, SPLIT_PART(course_code,'-', 1) AS course_code, \n" \
+        "   year, semester, level, \n" \
+        "   course_code, \n" \
+        "   course_code_ces2 \n" \
         '   reliability, round(gts, 1) AS gts, round(gts_mean, 1) AS gts_mean, \n' \
         '   round(osi, 1) AS osi, round(osi_mean, 1) AS osi_mean, \n' \
         '   round(gts1, 1) AS gts1, round(gts2, 1) AS gts2, round(gts3, 1) AS gts3, \n' \
         '   round(gts4, 1) AS gts4, round(gts5, 1) AS gts5, round(gts6, 1) AS gts6, \n' \
-        '   course_name, course_coordinator, survey_population, osi_response_count, gts_response_count \n' \
+        '   course_name, course_coordinator, survey_population, osi_count, gts_count \n' \
         ' FROM {0}.{1} \n' \
         " WHERE SPLIT_PART(course_code,'-', 1) IN {2} \n" \
-        "	  AND survey_year >= '{3}' \n" \
-        "   AND survey_year <= '{4}' \n" \
-        "   AND all_flag = 'All' \n" \
-        " ORDER BY course_code, survey_year, survey_semester; \n" \
+        "	  AND year >= {3} \n" \
+        "   AND year <= {4} \n" \
+        " ORDER BY course_code, year,semester; \n" \
         "".format(schema, tbl,
                   list_to_text(course_list),
                   start_year,
@@ -313,7 +314,7 @@ def get_course_program_ces_data(course_list, start_year, end_year, cur, tbl, sch
         '   round(osi, 1) AS osi, round(osi_mean, 1) AS osi_mean, \n' \
         '   population, osi_count, gts_count \n' \
         ' FROM {0}.{1} \n' \
-        " WHERE SPLIT_PART(course_code,'-', 1) IN {2} \n" \
+        " WHERE SPLIT_PART(course_code) IN {2} \n" \
         "	  AND year >= {3} \n" \
         "   AND year <= {4} \n" \
         " ORDER BY course_code, program_code, year, semester; \n" \
@@ -468,7 +469,7 @@ df_schools = df_ce[['school_code', 'school_name']].drop_duplicates()
 df_ce_ces = get_course_ces_data(df_ce['course_code_alt'].tolist(),
                                 start_year,
                                 end_year,
-                                cur=postgres_cur, tbl='vw_summaries_combined', schema='ces_summaries')
+                                cur=postgres_cur, tbl='vw1_course_summaries_fixed', schema='ces')
 
 df_ce_comments = get_course_comments(df_ce['course_code_alt'].tolist(),
                                      comments_year, comments_semester,
