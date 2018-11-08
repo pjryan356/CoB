@@ -12,6 +12,33 @@ from general.sams_helper_functions import *
 from general.sams_queries import *
 
 
+def get_school_name(school_code):
+  if school_code == '610P':
+    return 'CBO'
+  if school_code == '615H':
+    return 'ACCT'
+  if school_code == '620H':
+    return 'BITL'
+  if school_code == '625H':
+    return 'EFM'
+  if school_code == '630H':
+    return 'MGT'
+  if school_code == '650T':
+    return 'VBE'
+  if school_code == '660H':
+    return 'GSBL'
+  if school_code == 'VN':
+    return 'Not CoB'
+  return None
+
+def list_to_text(obList):
+  # converts a list of object into a string list for sql IN statement
+  txt = "("
+  for ob in obList:
+    txt += "'{}',".format(ob)
+  txt = txt[:-1] + ")"
+  return txt
+
 def copy_rename(old_file_name, new_file_name):
   import os
   
@@ -24,7 +51,7 @@ def copy_rename(old_file_name, new_file_name):
   new_dst_file_name = os.path.join(dst_dir, new_file_name)
   os.rename(dst_file, new_dst_file_name)
 
-def get_all_bus_courses(term_year, term_category):
+def get_all_bus_courses(term_year, term_code):
   qry = '''
 SELECT DISTINCT
     cls.course_code,
@@ -41,24 +68,23 @@ FROM (
       t2.acad_org AS school_code
 
     FROM PS_CLASS_TBL t2
-    WHERE t2.acad_group = 'BUS'
+    WHERE t2.acad_group = 'BUS' AND substr(t2.strm,3,2)={1} AND enrl_tot > 0
     ) cls
   INNER JOIN (
     SELECT DISTINCT
       t3.STRM AS term_code,
       t3.DESCRSHORT AS term_name
     FROM PS_TERM_TBL t3
-    WHERE acad_year = {0} AND term_category = {1}
+    WHERE acad_year = {0}
     ) term ON (cls.term_code = term.term_code)
-'''.format(term_year, term_category)
+'''.format(term_year, term_code)
   return qry
   
-def get_course_grade_distribution(course_code, term_code='1850', st_year=2015, semester=None):
+def get_course_grade_distribution(course_code, term_code='1850', st_year=2015, term_codes=None):
   st_term = '{}00'.format(str(int(st_year)-2000))
-  if semester == None:
-    sem_txt = '(1,2)'
-  else:
-    sem_txt = '({})'.format(semester)
+  
+  term_txt = list_to_text(term_codes)
+
   qry = '''
 SELECT
 	cls.course_code,
@@ -82,8 +108,7 @@ FROM (
 
   FROM	PS_STDNT_ENRL t1
   WHERE
-      t1.strm >= '{0}'
-      AND t1.strm < '{1}'
+      t1.strm >= '{0}' AND t1.strm < '{1}' AND substr(strm,3,2) IN {4}
       AND t1.INCLUDE_IN_GPA = 'Y'
       AND t1.STDNT_ENRL_STATUS = 'E'
       AND t1.ENRL_STATUS_REASON='ENRL'
@@ -108,31 +133,101 @@ INNER JOIN (
     t3.term_category,
     t3.acad_year AS term_year
   FROM PS_TERM_TBL t3
-  WHERE t3.acad_year >= {3} AND t3.term_category IN {4}
+  WHERE t3.acad_year >= {3}
   ) term ON (enrl.term_code = term.term_code)
 GROUP BY cls.course_code, enrl.term_code, term.term_name
 ORDER BY enrl.term_code DESC
-  '''.format(st_term, term_code, course_code, st_year, sem_txt)
+  '''.format(st_term, term_code, course_code, st_year, term_txt)
   return(qry)
 
+def get_term_category(location, semester=None):
+  if semester != None:
+    if location == 'MELB':
+      return [current_semester]
+    if location == 'SBM':
+      return [current_semester+4]
+    if location == 'SIM':
+      if semester == 1:
+        return[5]
+      if semester == 2:
+        return [7]
+    else:
+      print('Selection not available')
+      return None
 
+  if semester == None:
+    if location == 'MELB':
+      return [1, 2]
+    if location == 'SBM':
+      return [5, 6, 7]
+    if location == 'SIM':
+      return [5, 7]
+    else:
+      print('Selection not available')
+      return None
 
+def get_term_code(location, semester=None):
+  if semester != None:
+    if location == 'MELB':
+      if semester == 1:
+        return ['05', '10']
+      if semester == 2:
+        return ['45', '50']
+    if location == 'SBM':
+      return ['9{}'.format(semester)]
+      
+    if location == 'SIM':
+      if semester == 1:
+        return ['20']
+      if semester == 2:
+        return ['60']
+    else:
+      print('Selection not available')
+      return None
 
+  if semester == None:
+    if location == 'MELB':
+      return ['05', '10', '45', '50']
+    if location == 'SBM':
+      return ['91', '92', '93']
+    if location == 'SIM':
+      return ['20', '60']
+    else:
+      print('Selection not available')
+      return None
+    
 # Create connections
 # create sams engine this is the connection to the oracle database
 password_str = input("SAMS Password: ") ## Input password
 sams_engine = return_sams_engine(password_str=password_str)
 
 # Get current semester information
-current_year = int(input("Current year: "))
-current_semester = int(input("Current semester (1 or 2): "))
-equivalent_semesters = bool(input("Use equivalent semester (True or False): "))
-st_year = int(input("Earliest Year: "))
-sheet_pw = input("Select Password: ")
+current_year=2018
+#current_year = int(input("Current year: "))
+
+current_semester=2
+#current_semester = int(input("Current semester (1 or 2 or 3): "))
+
+location = input("Location (MELB, SBM, SIM): ")
+
+equivalent_semesters = False
+#equivalent_semesters = bool(input("Use equivalent semester (True or False): "))
+
+st_year=2015
+#st_year = int(input("Earliest Year: "))
+
+sheet_pw = 'ADG'
+#sheet_pw = input("Select Password: ")
+
+
+term_cat = get_term_category(location, current_semester)
+term_code = get_term_code(location, current_semester)
+
 
 start = dt.datetime.now()
 # Get all courses
-df_courses = pd.read_sql(sql=get_all_bus_courses(current_year, current_semester), con=sams_engine)
+df_courses = pd.read_sql(sql=get_all_bus_courses(current_year, term_code[0]), con=sams_engine)
+print (len(df_courses))
 
 # Iterate through courses
 for i_course, r_course in df_courses.iterrows():
@@ -141,11 +236,12 @@ for i_course, r_course in df_courses.iterrows():
     sams_qry = get_course_grade_distribution(course_code=r_course['course_code'],
                                              term_code=r_course['term_code'],
                                              st_year=st_year,
-                                             semester=current_semester)
+                                             get_term_code=get_term_code(location, current_semester))
   else:
     sams_qry = get_course_grade_distribution(course_code=r_course['course_code'],
                                              term_code=r_course['term_code'],
-                                             st_year=st_year)
+                                             st_year=st_year,
+                                             term_codes=get_term_code(location))
   try:
     df = pd.read_sql(sql=sams_qry, con=sams_engine)
     #print(tabulate(df, headers='keys'))
@@ -153,7 +249,7 @@ for i_course, r_course in df_courses.iterrows():
     print(sams_qry)
   
   # open template
-  directory = 'H:\\Projects\\CoB\\Course_Assessment_Moderation\\'
+  directory = 'H:\\Projects\\CoB\\Course_Assessment_Moderation\\test\\'
   template = 'grade_distribution_template.xlsx'
   wb = openpyxl.load_workbook(directory+template)
   sheet = wb['data']
@@ -173,13 +269,16 @@ for i_course, r_course in df_courses.iterrows():
       sheet.cell(row=5 - i, column=6).value = r['di']
       sheet.cell(row=5 - i, column=7).value = r['hd']
 
+  school_name = get_school_name(r_course['school_code'])
+  
   # protect sheet
   sheet.protection.set_password('{}'.format(sheet_pw))
   # Save sheet
-  filename = '{0}\\{0}_{1}_grade_distribution_{2}.xlsx'.format(r_course['school_code'], r_course['course_code'], r_course['term_name'])
+  filename = '{0}\\{1}\\{2}_{3}_grade_distribution.xlsx'.format(school_name, location, r_course['course_code'], r_course['term_name'])
   wb.save(directory+filename)
-  print('Done: {} {}'.format(i_course, r_course['course_code']))
-  
   del df
+  if i_course%10 == 0:
+    print('{} courses in {} seconds'.format(i_course, (dt.datetime.now() - start).seconds))
 
-print('It took {} seconds'.format((dt.datetime.now()-start).seconds))
+print('i courses in {} seconds'.format((dt.datetime.now() - start).seconds))
+

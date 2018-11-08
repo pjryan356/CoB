@@ -134,7 +134,7 @@ def get_course_pop(df1, course_code, term_code=None, year=None, semester=None):
     try:
       df1_filter = df1.loc[
         (df1['term_code'] == term_code) &
-        (df1['course_code'] == course_code)]
+        (df1['course_code_ces'] == course_code)]
       pop = int(df1_filter['population'].agg('sum'))
       return (pop)
     except:
@@ -144,7 +144,7 @@ def get_course_pop(df1, course_code, term_code=None, year=None, semester=None):
       df1_filter = df1.loc[
         (df1['year'] == year) &
         (df1['semester'] == semester) &
-        (df1['course_code'] == course_code)]
+        (df1['course_code_ces'] == course_code)]
     
       pop = int(df1_filter['population'].agg('sum'))
       return (pop)

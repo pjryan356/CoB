@@ -34,7 +34,8 @@ def line_graph_measure_surveys(df1,
                                start_year=2014,
                                end_year=2018, semester=None,
                                width=520, height=320):
-  f_df = df1.loc[df1['course_code'] == course_code]
+  f_df = df1.loc[df1['course_code_ces'] == course_code]
+  
   # all traces for plotly
   traces = []
   
@@ -67,7 +68,7 @@ def line_graph_measure_surveys(df1,
     for year in range(int(start_year), int(end_year) + 1):
       for sem in semesters:
         try:
-          val = pd.to_numeric(f_df.loc[(f_df['survey_year'] == str(year)) & (f_df['survey_semester'] == int(sem))].iloc[0][measure])
+          val = pd.to_numeric(f_df.loc[(f_df['year'] == int(year)) & (f_df['semester'] == int(sem))].iloc[0][measure])
         except:
           val = None
         y.append(val)
@@ -75,7 +76,7 @@ def line_graph_measure_surveys(df1,
         # Only put data_labels on first trace
         if label_check == 1:
           try:
-            val = f_df.loc[(f_df['survey_year'] == str(year)) & (f_df['survey_semester'] == int(sem))].iloc[0]['reliability']
+            val = f_df.loc[(f_df['year'] == int(year)) & (f_df['semester'] == int(sem))].iloc[0]['reliability']
           except:
             val = None
           data_label.append(str(val))
@@ -155,7 +156,7 @@ def line_graph_program_measure_surveys(df1,
                                        start_year=2014,
                                        end_year=2018, semester=None,
                                        width=520, height=320):
-  f_df = df1.loc[df1['course_code'] == course_code]
+  f_df = df1.loc[df1['course_code_ces'] == course_code]
   
   # all traces for plotly
   traces = []
@@ -257,7 +258,7 @@ def line_graph_gtsq_surveys(df1,
                             start_year, end_year,
                             semester=None, acad_career='HE',
                             width=520, height=320):
-  f_df = df1.loc[df1['course_code'] == course_code]
+  f_df = df1.loc[df1['course_code_ces'] == course_code]
   if acad_career == None:
     acad_career = f_df['level'].tolist()[-1]
     
@@ -287,7 +288,7 @@ def line_graph_gtsq_surveys(df1,
     for year in range(int(start_year), int(end_year) + 1):
       for sem in semesters:
         try:
-          val = pd.to_numeric(f_df.loc[(f_df['survey_year'] == str(year)) & (f_df['survey_semester'] == int(sem))].iloc[0][measure])
+          val = pd.to_numeric(f_df.loc[(f_df['year'] == int(year)) & (f_df['semester'] == int(sem))].iloc[0][measure])
         except:
           val = None
         y.append(val)
@@ -505,9 +506,9 @@ def generate_ces_table(df1, course_code):
     # Body
     [
       html.Tr(
-        [html.Td(f_df.iloc[i][col]) for col in ('survey_year',
-                                                'survey_semester',
-                                                'survey_population',
+        [html.Td(f_df.iloc[i][col]) for col in ('year',
+                                                'ssemester',
+                                                'population',
                                                 'reliability',
                                                 'osi',
                                                 'gts',
@@ -530,7 +531,7 @@ def generate_ces_table(df1, course_code):
 
 
 def generate_ces_pd_table(df1, course_code):
-  f_df = df1.loc[df1['course_code'] == course_code]
+  f_df = df1.loc[df1['course_code_ces'] == course_code]
   
   h = ['<br>Year<br>', '<br>S<br>', '<br>Pop<br>', '<br>Rel<br>',
        '<br>OSI<br>', '<br>GTS<br>', '<br>Q1<br>', '<br>Q2<br>',
@@ -553,7 +554,7 @@ def generate_ces_pd_table(df1, course_code):
                                 rc.RMIT_White, rc.RMIT_White,
                                 rc.RMIT_White, rc.RMIT_White,
                                 rc.RMIT_White, rc.RMIT_White]),
-               values=[f_df.survey_year, f_df.survey_semester, f_df.survey_population, f_df.reliability,
+               values=[f_df.year, f_df.semester, f_df.population, f_df.reliability,
                        f_df.osi, f_df.gts, f_df.gts1, f_df.gts2, f_df.gts3, f_df.gts4, f_df.gts5, f_df.gts6],
                font=dict(size=12,
                          color=[rc.RMIT_White, rc.RMIT_White,
