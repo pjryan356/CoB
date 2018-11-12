@@ -35,7 +35,8 @@ def line_graph_measure_surveys(df1,
                                end_year=2018, semester=None,
                                width=520, height=320):
   f_df = df1.loc[df1['course_code_ces'] == course_code]
-  
+  #print(tabulate(df1, headers='keys'))
+  #print(course_code)
   # all traces for plotly
   traces = []
   

@@ -294,7 +294,7 @@ def get_course_ces_data(course_list, start_year, end_year, cur, tbl='vw1_course_
         '   round(gts4, 1) AS gts4, round(gts5, 1) AS gts5, round(gts6, 1) AS gts6, \n' \
         '   course_coordinator, population, osi_count, gts_count \n' \
         ' FROM {0}.{1} \n' \
-        " WHERE SPLIT_PART(course_code_ces,'-', 1) IN {2} \n" \
+        " WHERE course_code_ces IN {2} \n" \
         "	  AND year >= {3} \n" \
         "   AND year <= {4} \n" \
         " ORDER BY course_code_ces, year, semester; \n" \
@@ -302,7 +302,6 @@ def get_course_ces_data(course_list, start_year, end_year, cur, tbl='vw1_course_
                   list_to_text(course_list),
                   start_year,
                   end_year)
-  
   return db_extract_query_to_dataframe(qry, cur, print_messages=False)
 
 def get_course_comments(course_list, year, semester, cur, tbl='vw2_comments', schema='ces'):
@@ -336,12 +335,12 @@ def get_course_comments(course_list, year, semester, cur, tbl='vw2_comments', sc
   return db_extract_query_to_dataframe(qry, cur, print_messages=False)
 
 
-def get_course_comments_themes(course_list, year, semester, cur, tbl='tbl_course_thematic', schema='course_enhancement'):
+def get_course_comments_themes(course_list, year, semester, cur, tbl='vw1_course_thematic', schema='course_enhancement'):
   ### Get micorsurgery course themes
-  qry = " SELECT course_code, themes \n" \
+  qry = " SELECT course_code, course_code_ces, themes \n" \
         " FROM  {0}.{1}\n" \
         " WHERE year = {2} AND semester = {3}  \n" \
-        "     AND SPLIT_PART(course_code,'-', 1) IN {4} \n" \
+        "     AND course_code_ces IN {4} \n" \
         "".format(schema, tbl,
                   year, semester,
                   list_to_text(course_list))
@@ -455,10 +454,9 @@ df_ce_comments = get_course_comments(df_ce['course_code_ces'].tolist(),
                                      comments_year, comments_semester,
                                      cur=postgres_cur)
 
-df_ce_comment_themes = get_course_comments_themes(df_ce['course_code'].tolist(),
+df_ce_comment_themes = get_course_comments_themes(df_ce['course_code_ces'].tolist(),
                                                   comments_year, comments_semester,
-                                                  cur=postgres_cur,
-                                                  tbl='tbl_course_thematic', schema='course_enhancement')
+                                                  cur=postgres_cur)
 
 #df_ce_prg_enrl = get_course_prg_enrl(df_ce['course_code'].tolist(),
 #                                     enrl_year, enrl_semester,
@@ -489,7 +487,6 @@ def create_course_options(df1, school_code=None):
   
   # Create Course options dropdown
   f_df.sort_values(['course_code_ces'])
-  f_df.sort_values(['school_code'])
   
   options = [{'label': '{0}: {1}'.format(r['course_code_ces'],
                                          r['course_name']),
@@ -622,7 +619,7 @@ def make_course_pack(course_code_ces):
   df1_ce = get_course_data(df_ce, course_code_ces)
   df1_ces = get_course_data(df_ce_ces, course_code_ces)
   df1_comments = get_course_data(df_ce_comments, course_code_ces)
-  df1_themes = get_course_data(df_ce_comment_themes, course_code_ces.split('-')[0])
+  df1_themes = get_course_data(df_ce_comment_themes, course_code_ces)
   df1_prg_ces = get_course_data(df_ce_prg_ces, course_code_ces)
   
   # get top 5 programs in most recent semester
@@ -639,7 +636,7 @@ def make_course_pack(course_code_ces):
   gts_list = get_gts_questions(level)
   
   # create themes text
-  themes_txt = 'No themes identified'  # Default themse text
+  themes_txt = 'No themes identified.'  # Default themse text
   try:
     themes_txt = df1_themes.iloc[0].themes
   except:
