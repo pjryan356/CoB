@@ -24,7 +24,7 @@ postgres_con = postgres_engine.connect()
 
 
 def upload_program_course_data_from_excel(directory, filename, engine,
-                                  program_course_tbl_name='tbl_program_course_post2018',
+                                  program_course_tbl_name='tbl_program_class_post2018',
                                   program_tbl_name='tbl_program_post2018',
                                   schema='ces'):
   # gets course ces data split by program from the suuplied excel files and uploads them to postrgres
@@ -40,7 +40,7 @@ def upload_program_course_data_from_excel(directory, filename, engine,
                        sheet_name='Sheet1',
                        skiprows=4,
                        usecols=[0, 2, 4, 8, 9, 10, 11, 13, 14, 15, 16, 17, 18, 19, 20, 21],
-                       skipfooter=13)
+                       skipfooter=10)
   
     df.columns = ['course_code_ces', 'class_nbr',
                   'all_flag',
@@ -91,6 +91,7 @@ def upload_program_course_data_from_excel(directory, filename, engine,
   df_courses['class_nbr'].apply(str)
   
   try:
+    int('df')
     df_courses.to_sql(
       name=program_course_tbl_name,
       con=engine,
@@ -99,14 +100,15 @@ def upload_program_course_data_from_excel(directory, filename, engine,
       index=False
       )
   except Exception as e:
-    print(e)
-    print('course input failed' + filename)
+    #print(e)
+    #print('course input failed' + filename)
     pass
   
   # prepare data for teacher_course_level table
   df_program = df.loc[df['osi_count'].notnull()]
-  df_program = df.loc[(df['course_code_ces'].str.contains(program_code)) & df['class_nbr'].isnull()]
-
+  print(tabulate(df_program, headers='keys'))
+  df_program = df_program.loc[(df_program['course_code_ces'].str.contains(program_code)) & df_program['class_nbr'].isnull()]
+  print(tabulate(df_program, headers='keys'))
 
   df_program: object = df_program[[
     'year', 'semester', 'level',
@@ -123,7 +125,7 @@ def upload_program_course_data_from_excel(directory, filename, engine,
     = df_program[['gts', 'gts_mean',
                   'gts1', 'gts2', 'gts3', 'gts4', 'gts5', 'gts6']].apply(pd.to_numeric, errors='coerce')
 
-  
+  print(tabulate(df_program, headers='keys'))
   
   try:
     df_program.to_sql(
@@ -135,12 +137,12 @@ def upload_program_course_data_from_excel(directory, filename, engine,
       )
   except Exception as e:
     print(e)
-    print('teacher input failed' + filename)
+    print('program input failed' + filename)
     pass
 
 # get data from excel doc
 # open template
-directory = 'H:\\Data\\CoB Database\\CES\\Program_course\\Done\\'
+directory = 'H:\\Data\\CoB Database\\CES\\Program_course\\'
 
 for filename in os.listdir(directory):
     if filename.endswith(".xls"):
