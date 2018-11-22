@@ -259,7 +259,7 @@ def make_comments_rows(df1, empty_statement='No comments provided'):
 '''----------------------------- create data extraction functions -------------------------------------'''
 
 
-def get_course_enhancement_list(year, semester, cur, tbl='vw1_course', schema='course_enhancement'):
+def get_course_enhancement_list(year, semester, cur, tbl='vw100_courses', schema='course_enhancement'):
   # Returns a dataframe of the courses undergoing enhancement course in year, semester from db (cur)
   qry = " SELECT DISTINCT \n" \
         "   ce.level, ce.school_code, ce.course_code, \n" \
@@ -275,7 +275,7 @@ def get_course_enhancement_list(year, semester, cur, tbl='vw1_course', schema='c
         " LEFT OUTER JOIN ( \n" \
         "   SELECT * FROM lookups.vw_course_details_recent \n" \
         "   ) cd ON (SPLIT_PART(cd.course_code,'-', 1) = SPLIT_PART(ce.course_code,'-', 1))\n" \
-        " ORDER BY ce.school_code, ce.course_code_ces \n" \
+        " ORDER BY ce.school_code, ce.course_code \n" \
         "".format(schema, tbl,
                   year, semester)
   
@@ -304,14 +304,14 @@ def get_course_ces_data(course_list, start_year, end_year, cur, tbl='vw1_course_
                   end_year)
   return db_extract_query_to_dataframe(qry, cur, print_messages=False)
 
-def get_course_comments(course_list, year, semester, cur, tbl='vw2_comments', schema='ces'):
+def get_course_comments(course_list, year, semester, cur, tbl='vw202_comments', schema='ces'):
   # Returns a dataframe with CES comments for courses in course list from
   qry = """
   SELECT
   	CASE
-      	WHEN prg.population <= 5 OR prg.population IS NULL THEN ''
+      	WHEN pop.population <= 5 OR pop.population IS NULL THEN ''
       	ELSE comm.program_code END AS program_code,
-  	best, improve, comm.course_code, comm.course_code_ces
+  	best, improve, pop.course_code, pop.course_code_ces
   FROM (
     	SELECT course_code, course_code_ces, program_code, best, improve
     	FROM {0}.{1}
@@ -319,23 +319,23 @@ def get_course_comments(course_list, year, semester, cur, tbl='vw2_comments', sc
   	) comm
   LEFT OUTER JOIN (
       SELECT
-      	enrl.course_code,
-        enrl.program_code,
-        sum(enrl.population) AS population
-      FROM enrolments.tbl_course_program_pop enrl
-      WHERE enrl_status = 'E' AND enrl_reason = 'ENRL'
-      	    AND course_code IN {4}
-      	    AND term_code IN {5}
-      GROUP BY enrl.course_code, enrl.program_code
-  	) prg ON comm.program_code = prg.program_code AND comm.course_code = prg.course_code
+      	pc.course_code,
+      	pc.course_code_ces,
+        pc.program_code,
+        pc.population
+      FROM ces.vw115_course_program pc
+      WHERE course_code_ces IN {4}
+      	    AND year = {5}
+      	    AND semester = {6}
+  	) pop ON comm.program_code = pop.program_code AND comm.course_code_ces = pop.course_code_ces
   """.format(schema, tbl,
              year, semester,
              list_to_text(course_list),
-             list_to_text(get_term_code_list(year, semester)))
+             year, semester)
   return db_extract_query_to_dataframe(qry, cur, print_messages=False)
 
 
-def get_course_comments_themes(course_list, year, semester, cur, tbl='vw1_course_thematic', schema='course_enhancement'):
+def get_course_comments_themes(course_list, year, semester, cur, tbl='vw301_course_thematic', schema='ces'):
   ### Get micorsurgery course themes
   qry = " SELECT course_code, course_code_ces, themes \n" \
         " FROM  {0}.{1}\n" \
@@ -344,10 +344,9 @@ def get_course_comments_themes(course_list, year, semester, cur, tbl='vw1_course
         "".format(schema, tbl,
                   year, semester,
                   list_to_text(course_list))
-  
   return db_extract_query_to_dataframe(qry, cur, print_messages=False)
 
-def get_course_program_ces_data(course_list, start_year, end_year, cur, tbl='vw6_course_program', schema='ces'):
+def get_course_program_ces_data(course_list, start_year, end_year, cur, tbl='vw115_course_program', schema='ces'):
   # Returns a dataframe with CES data for courses in course list
   qry = ' SELECT \n' \
         '   crse_prg.*, \n' \
