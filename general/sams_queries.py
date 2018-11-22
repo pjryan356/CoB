@@ -112,6 +112,7 @@ SELECT DISTINCT
    enrl.STRM || '-' || enrl.CLASS_NBR || '-' || cls.SUBJECT || cls.CATALOG_NBR AS classkey,
    enrl.STRM AS term_code,
    cls.SUBJECT || cls.CATALOG_NBR AS course_code,
+   enrl.class_nbr,
    substr(enrl.EMPLID,1,7) as std_id,
    enrl.ACAD_PROG AS program_code,
    enrl.STDNT_ENRL_STATUS AS enrl_status,
@@ -156,6 +157,23 @@ FROM  (
     {0}
     ) enrl
 GROUP BY enrl.term_code, enrl.course_code, enrl.program_code, enrl.enrl_status, enrl.enrl_reason
+'''.format(qry_std_class_grades(st_term=st_term, end_term=end_term))
+  return qry
+
+def qry_class_program_enrolments(st_term='1300', end_term='1900'):
+  qry = '''
+SELECT
+  enrl.term_code,
+  enrl.course_code,
+  enrl.class_nbr,
+  enrl.program_code,
+  enrl.enrl_status,
+  enrl.enrl_reason,
+  count(DISTINCT enrl.std_id) AS population
+FROM  (
+    {0}
+    ) enrl
+GROUP BY enrl.term_code, enrl.course_code,enrl.class_nbr,  enrl.program_code, enrl.enrl_status, enrl.enrl_reason
 '''.format(qry_std_class_grades(st_term=st_term, end_term=end_term))
   return qry
 
