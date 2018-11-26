@@ -1,4 +1,3 @@
-import RMIT_colours as rc
 
 import plotly
 import plotly.plotly as py
@@ -22,16 +21,17 @@ import base64
 import pandas as pd
 import plotly.offline
 
-from Course_enhancement_graphs import *
-from Course_enhancement_functions import *
 
 #auth = dash_auth.BasicAuth(app, VALID_USERNAME_PASSWORD_PAIRS)
+
+import general.RMIT_colours as rc
 
 from general.db_helper_functions import (
   connect_to_postgres_db,
   db_extract_query_to_dataframe
 )
 
+school = input("School short: ")
 
 '''--------------------------------- Connect to Database  ----------------------------'''
 # create postgres engine this is the connection to the postgres database
@@ -55,7 +55,7 @@ def qry_school_history(school_name_short,
                        semester=None,
                        level='HE',
                        schema='ces',
-                       table='vw_school_summaries_percent_stitched'):
+                       table='vw998_school_from_course_summaries'):
   qry = ' SELECT t1.* \n' \
         ' FROM ({0}) t1 \n' \
         " WHERE school_name_short = '{1}' \n" \
@@ -80,8 +80,8 @@ def qry_school_history_details(schema, table):
         ' FROM ( \n' \
         '   SELECT \n' \
         '     year, semester, level, \n' \
-        '     code, name, college_code, \n' \
-        '     survey_population, osi_response_count, osi, gts \n' \
+        '     school_code, school_name, \n' \
+        '     population, osi, gts \n' \
         '   FROM {0}.{1} \n' \
         '   ) sch \n' \
         ' LEFT JOIN ( \n' \
@@ -90,14 +90,14 @@ def qry_school_history_details(schema, table):
         '     school_name_short, \n' \
         '     colour_html,' \
         '     colour_alt_html \n' \
-        '   FROM lookups.vw_bus_schools_colours) sd ON sch.code = sd.school_code::text \n' \
+        '   FROM lookups.vw_bus_schools_colours) sd ON sch.school_code = sd.school_code::text \n' \
         ' LEFT JOIN ( \n' \
         '   SELECT \n' \
         '     year::integer AS year, \n' \
         '     school_code, \n' \
         '     gts_target, \n' \
         '     osi_target \n' \
-        '   FROM ces.tbl_school_targets) st ON st.school_code = sch.code::text AND sch.year = st.year \n' \
+        '   FROM ces.tbl_school_targets) st ON st.school_code = sch.school_code::text AND sch.year::int = st.year::int \n' \
         ' ORDER BY year, semester, level \n' \
         ''.format(schema, table)
   return qry
@@ -115,17 +115,8 @@ def line_trace_school_measure(school_name_short, measure='gts',
     start_year=start_year,
     semester=semester,
     schema='ces',
-    table='vw_school_summaries_percent_stitched'
+    table='vw998_school_from_course_summaries'
   )
-  if school_name_short == 'CoB':
-    qry = qry_school_history(
-      school_name_short=school_name_short,
-      level=level,
-      start_year=start_year,
-      semester=semester,
-      schema='ces',
-      table='vw_college_summaries_percent_stitched'
-    )
   
   df1 = db_extract_query_to_dataframe(qry, cur, print_messages=False)
   if semester == 1:   df1 = df1.loc[df1['semester'] == 1]
@@ -165,7 +156,7 @@ def line_trace_school_measure(school_name_short, measure='gts',
 def create_school_RMIT_graph(measure='gts',
                              start_year=2014, end_year=2018,
                              semester=1,
-                             folder='C:\\Peter\\CoB\\CES\\2018_Semester_1\\',
+                             folder='C:\\Peter\\CoB\\CES\\2018_Semester_2\\',
                              height=600,
                              width=1100,
                              colour_alt=False,
@@ -179,15 +170,14 @@ def create_school_RMIT_graph(measure='gts',
   traces = []
   x = [i+0.5 for i in range(0, (int(end_year) - int(start_year) + 1))]
   xlabels = ['{}'.format(i) for i in range(int(start_year), int(end_year) + 1)]
-  graph_title = 'School {} (% Agree) by year (Semester {})'.format(measure.upper(), semester)
+  graph_title = 'Semester {1} School {0} (% Agree) by year'.format(measure.upper(), semester)
   for school in [['ACCT', 'HE'],
                  ['BITL', 'HE'],
                  ['EFM', 'HE'],
                  ['GSBL', 'HE'],
                  ['MGT', 'HE'],
                  ['VBE', 'HE'],
-                 ['VBE', 'VE'],
-                 ['CoB', 'All']]:
+                 ['VBE', 'VE']]:
     
     if school[1] == 'VE': dash_type = 'dot'
     else: dash_type = None
@@ -250,16 +240,16 @@ def create_school_RMIT_graph(measure='gts',
   #py.image.save_as(fig, filename+'.png')
   return fig
 
-'''fig = create_school_RMIT_graph(
+fig = create_school_RMIT_graph(
   measure='gts',
   start_year=2014, end_year=2018,
-  semester=1,
-  folder='C:\\Peter\\CoB\\CES\\2018_Semester_1\\',
+  semester=2,
+  folder='C:\\Peter\\CoB\\CES\\2018_Semester_2\\',
   height=400,
   width=800,
   colour_alt=True,
   background='#FFFFFF')
-'''
+
 
 def generate_ces_schools_table(semester=1, level='All'):
   h = ['<br><b>School</b><br>', '<br>Pop.<br>',
@@ -267,9 +257,8 @@ def generate_ces_schools_table(semester=1, level='All'):
        '<br>Change<br>', '<br>Target<br>']
 
   qry = " SELECT \n " \
-        "   CASE WHEN name_short = 'CBO' THEN 0 ELSE 1 END AS order1, \n" \
-        "   * FROM ces.vw_school_summaries_table_percent \n" \
-        " WHERE semester = {0} \n" \
+        "   * FROM ces.vw999_school_from_course_summaries_2018 \n" \
+        " WHERE semester = {0}\n" \
         " UNION \n" \
         ' SELECT \n' \
         '   2 AS order1, \n' \
@@ -328,7 +317,8 @@ def generate_ces_schools_table(semester=1, level='All'):
   plotly.offline.plot(fig, 'text' + '.html')
   return fig
 
-fig2 = generate_ces_schools_table(semester=1, level='All')
+
+#fig2 = generate_ces_schools_table(semester=2, level='All')
 '''
  traces.append(trace_sem1)
   

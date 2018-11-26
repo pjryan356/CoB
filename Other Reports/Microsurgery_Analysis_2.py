@@ -1,13 +1,9 @@
-import RMIT_colours as rc
 
-import plotly
-import plotly.plotly as py
+
 import plotly.graph_objs as go
 from plotly import tools
 import plotly.offline
 
-import sys
-sys.path.append('C:\\Peter\\CoB\\python_scripts')
 
 from tabulate import tabulate
 import pandas as pd
@@ -55,20 +51,22 @@ con_string = "host='{0}' " \
 con, cur = connect_to_postgres_db(con_string)
 
 '''--------------------------------- Initialise Parameters  ----------------------------'''
+start_year = input("Start Year: ")
+end_year = input("End Year: ")
 start_year = '2014'
 end_year = '2018'
 
 
-qry = " SELECT year, semester, course_code, gts_delta::numeric, CASE WHEN ms=true THEN 1 ELSE 0 END AS ms \n" \
-      "	FROM projects.vw_pre_post_offerings_delta_ms \n" \
+qry = " SELECT year, semester, course_code_ces, gts_delta::numeric, CASE WHEN ce=true THEN 1 ELSE 0 END AS ce \n" \
+      "	FROM course_enhancement.vw204_ce_evaluation \n" \
       " WHERE gts_pre IS NOT NULL AND gts_post IS NOT NULL \n" \
 
 df1 = db_extract_query_to_dataframe(qry, cur, print_messages=False)
 df1['gts_delta'] = df1['gts_delta'].astype(float)
 
 
-df1_group = df1.groupby(["year", "semester", "ms"])
-print(df1_group.gts_delta.agg([np.mean, np.std, scipystats.sem]))
+df1_group = df1.groupby(["year", "semester", "ce"])
+print(df1_group.gts_delta.agg([np.mean, np.std, scipystats.sem, len]))
 pval = []
 ms_mean = []
 nms_mean = []
@@ -76,9 +74,9 @@ ms_sem = []
 nms_sem = []
 labels = []
 
-for sem in [[2016, 2], [2017, 1], [2017, 2], [2018, 1]]:
-  df_temp1 = df1.query('ms==1 & year=={} & semester=={}'.format(sem[0], sem[1]))
-  df_temp2 = df1.query('ms==0 & year=={} & semester=={}'.format(sem[0], sem[1]))
+for sem in [[2016, 2], [2017, 1], [2017, 2], [2018, 1], [2018, 2]]:
+  df_temp1 = df1.query('ce==1 & year=={} & semester=={}'.format(sem[0], sem[1]))
+  df_temp2 = df1.query('ce==0 & year=={} & semester=={}'.format(sem[0], sem[1]))
   pval.append(scipystats.ttest_ind(df_temp1.gts_delta, df_temp2.gts_delta)[1])
   labels.append('{} S{}<br>'
                 'p-val={}'.format(sem[0], sem[1],
@@ -167,11 +165,11 @@ fig = go.Figure(data=data, layout=layout)
 
 plotly.offline.plot(
         fig,
-        filename='C:\\Peter\\CoB\\CES\\Microsurgeries\\MS_vs_NMS.html'
+        filename='H:\\Projects\\CoB\\CES\\Course Enhancement\\MS_vs_NMS_20182.html'
         )
 plotly.plotly.image.save_as(
   fig,
-  filename='C:\\Peter\\CoB\\CES\\Microsurgeries\\MS_vs_NMS.png'
+  filename='H:\\Projects\\CoB\\CES\\Course Enhancement\\MS_vs_NMS_20182.png'
 )
 
 def create_improve_bar(x, y, width, height, maxy=90):
