@@ -304,7 +304,7 @@ def get_course_ces_data(course_list, start_year, end_year, cur, tbl='vw1_course_
                   end_year)
   return db_extract_query_to_dataframe(qry, cur, print_messages=False)
 
-def get_course_comments(course_list, year, semester, cur, tbl='vw202_comments', schema='ces'):
+def get_course_comments(course_list, year, semester, cur, tbl='vw202_course_comments', schema='ces'):
   # Returns a dataframe with CES comments for courses in course list from
   qry = """
   SELECT

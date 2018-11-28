@@ -106,9 +106,9 @@ def upload_program_course_data_from_excel(directory, filename, engine,
   
   # prepare data for teacher_course_level table
   df_program = df.loc[df['osi_count'].notnull()]
-  print(tabulate(df_program, headers='keys'))
+  #print(tabulate(df_program, headers='keys'))
   df_program = df_program.loc[(df_program['course_code_ces'].str.contains(program_code)) & df_program['class_nbr'].isnull()]
-  print(tabulate(df_program, headers='keys'))
+  #print(tabulate(df_program, headers='keys'))
 
   df_program: object = df_program[[
     'year', 'semester', 'level',
@@ -125,7 +125,7 @@ def upload_program_course_data_from_excel(directory, filename, engine,
     = df_program[['gts', 'gts_mean',
                   'gts1', 'gts2', 'gts3', 'gts4', 'gts5', 'gts6']].apply(pd.to_numeric, errors='coerce')
 
-  print(tabulate(df_program, headers='keys'))
+  #print(tabulate(df_program, headers='keys'))
   
   try:
     df_program.to_sql(

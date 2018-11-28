@@ -19,12 +19,14 @@ import dash_html_components as html
 
 import base64
 
-
 from general.db_helper_functions import (
   connect_to_postgres_db,
   db_extract_query_to_dataframe
 )
 
+from Course_Enhancement_comparison import (
+  create_ce_comparison_chart
+)
 year = 2018
 semester = 2
 
@@ -42,9 +44,6 @@ con_string = "host='{0}' " \
              "".format(postgres_host, postgres_dbname, postgres_user, postgres_pw)
 con, cur = connect_to_postgres_db(con_string)
 
-'''--------------------------------- Initialise Parameters  ----------------------------'''
-term_code = '1810'
-
 
 '''------------------------Get Images---------------------'''
 # header image
@@ -58,10 +57,10 @@ def get_ce_courses(year, semester):
         '   gts_delta, \n' \
        '    osi_pre, \n' \
         '   osi_post, \n' \
-        '   osi_delta,' \
-        '   school_pre_gts_target,' \
-        '   school_post_gts_target\n' \
-        ' FROM course_enhancement.vw205_ce_evaluation' \
+        '   osi_delta, \n' \
+        '   school_pre_gts_target,\n' \
+        '   school_post_gts_target \n' \
+        ' FROM course_enhancement.vw205_ce_evaluation \n' \
         ' WHERE ce = True \n' \
         '     AND year = {} \n' \
         '     AND semester = {} \n'.format(year, semester)
@@ -149,7 +148,7 @@ def create_improve_bar(x, y, width, height, maxy=90):
       zeroline=False),
     width=width,
     height=height,
-    margin=dict(b=0, l=10, r=0, t=10),
+    margin=dict(b=10, l=10, r=0, t=10),
     hidesources=True,
   )
   return go.Figure(data=[bar], layout=layout)
@@ -164,11 +163,11 @@ def make_header():
       [
         html.Img(
           src='data:image/png;base64,{}'.format(logo.decode()),
-          style={'height': '90px',
-                 'align': 'right',
-                 'margin-top': 20,
-                 'margin-left': 20,
-                 'margin-right': 0,
+          style={'height': '120px',
+                 'align': 'centre',
+                 'margin-top': 15,
+                 'margin-left': 60,
+                 'margin-right': 60,
                  }
         ),
       ],
@@ -183,20 +182,23 @@ def make_header():
 
 
 def make_red_heading_div():
-  style = {'textAlign': 'left',
+
+  style = {'text-align': 'center',
            'font-size': 36,
            'color': rc.RMIT_White,
            'font-family': 'Sans-serif',
            'font-weight': 'bold',
-           'margin-left': 20,
-           'margin-bottom': 5,
-           'margin-top': 5,
+           'margin-left': 10,
+           'margin-right': 10,
+           'margin-bottom': 10,
+           'margin-top': 10,
            'backgroundColor': rc.RMIT_Red,
            'line-height': 'normal'}
   
   div = html.Div(
-    [
-      html.Div(children='SEMESTER {}, {} COURSE ENHANCEMENT OUTCOMES'.format(semester, year), style=style),
+    children=[
+      html.P(children='Course Enhancement Semester {0}   {1}'.format(semester, year),
+             style=style),
     ],
     className='six columns',
     style={'backgroundColor': rc.RMIT_Red,
@@ -212,8 +214,8 @@ def make_blue_heading(df1):
             'font-size': 40,
             'font-family': 'Sans-serif',
             'color': rc.RMIT_Lemon,
-            'margin-left': 30,
-            'margin-right': 0,
+            'margin-left': 10,
+            'margin-right': 10,
             'line-height': 'normal'}
   
   style2 = {'textAlign': 'justify',
@@ -380,7 +382,7 @@ app.layout = html.Div(
                           'font-family': 'Sans-serif',
                           'font-weight': 'Bold',
                           'color': rc.RMIT_Black,
-                          'line-height': '140%',
+                          'line-height': '100%',
                           'margin-left': 0,
                           'margin-right': 0,
                           'margin-top': 10,
@@ -416,75 +418,43 @@ app.layout = html.Div(
              'margin-right': 0,
              'margin-top': 0},
       children=[
-        # GTS Factors
+        # Past performance
         html.Div(
           className="six columns",
           style={'margin-left': 0,
                  'margin-right': 0,
-                 'margin-top': 0},
+                 'margin-top': 0,
+                 'margin-bottom': 0},
           children=[
-            html.P(children='Mean GTS Item Factor (HE) Improvement',
+            html.P(children='Effectiveness Overtime (Mean GTS Change)',
                    style={'text-align': 'center',
                           'font-size': 16,
-                          'font-weight': 'Bold',
                           'font-family': 'Sans-serif',
+                          'font-weight': 'Bold',
                           'color': rc.RMIT_Black,
-                          'line-height': '140%',
+                          'line-height': '100%',
                           'margin-left': 0,
                           'margin-right': 0,
                           'margin-top': 0,
                           'margin-bottom': 0,
-                          'backgroundColor': rc.RMIT_White, },
+                          'backgroundColor': rc.RMIT_White,
+                          },
                    ),
-            # Perceived Effort
-            html.Div(
-              className="six columns",
+            dcc.Graph(
+              id='past-ce',
+              figure=create_ce_comparison_chart(
+                cur,
+                381,
+                180,
+                show_title=False,
+                show_annotations=False,
+                show_ylabel=False,
+                show_pval=False),
               style={'margin-left': 0,
                      'margin-right': 0,
-                     'margin-top': 0},
-              children=[
-                html.Div(
-                  [
-                    html.P(children='Perceived Effort',
-                           style={'text-align': 'center',
-                                  'font-size': 14,
-                                  'font-family': 'Sans-serif',
-                                  'color': rc.RMIT_Black,
-                                  'line-height': '140%',
-                                  'margin-left': 0,
-                                  'margin-right': 0,
-                                  'margin-top': 0,
-                                  'margin-bottom': 0,
-                                  'backgroundColor': rc.RMIT_White, },
-                           ),
-                  ]
-                )
-              ]
-            ),
-            # Student Engagement
-            html.Div(
-              className="six columns",
-              style={'margin-left': 0,
-                     'margin-right': 0,
-                     'margin-top': 0},
-              children=[
-                html.Div(
-                  [
-                    html.P(children='Student Engagement',
-                           style={'text-align': 'center',
-                                  'font-size': 14,
-                                  'font-family': 'Sans-serif',
-                                  'color': rc.RMIT_Black,
-                                  'line-height': '140%',
-                                  'margin-left': 0,
-                                  'margin-right': 0,
-                                  'margin-top': 0,
-                                  'margin-bottom': 0,
-                                  'backgroundColor': rc.RMIT_White, },
-                           ),
-                  ]
-                )
-              ]
+                     'margin-top': 0,
+                     'margin-bottom': 0,
+                    }
             ),
           ],
         ),
@@ -500,7 +470,7 @@ app.layout = html.Div(
                           'font-family': 'Sans-serif',
                           'font-weight': 'Bold',
                           'color': rc.RMIT_Black,
-                          'line-height': '140%',
+                          'line-height': '100%',
                           'margin-left': 0,
                           'margin-right': 0,
                           'margin-top': 0,

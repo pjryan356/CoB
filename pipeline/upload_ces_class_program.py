@@ -3,6 +3,7 @@
 
 import os
 import pandas as pd
+import numpy as np
 import psycopg2
 from sqlalchemy import (create_engine, orm)
 
@@ -40,6 +41,10 @@ def upload_course_prog_data_from_excel(directory, filename, engine, tbl_name='tb
   level = f_split[3][1:3]
   school_code = f_split[4].split('-')[0]
   course_code = f_split[4].split('-')[1]
+  try:
+    course_code_ces = course_code + '-' + f_split[4].split('-')[2]
+  except:
+    course_code_ces = course_code
   semester = f_split[6][:-1]
   year = f_split[7][:-1]
   
@@ -47,8 +52,13 @@ def upload_course_prog_data_from_excel(directory, filename, engine, tbl_name='tb
   df['semester'] = int(semester)
   df['level'] = level
   df['course_code'] = course_code
+
+  df['course_code_ces'] = course_code_ces
+
+  mask = df.program_code == 'Unknown'
+  df.loc[mask, 'program_code'] = 'UNKNW'
   
-  df = df[['year', 'semester', 'level', 'course_code',
+  df = df[['year', 'semester', 'level', 'course_code', 'course_code_ces',
            'program_code', 'population', 'osi_count', 'gts_count', 'reliability',
            'gts', 'gts_mean', 'osi', 'osi_mean',
            'gts1', 'gts2', 'gts3', 'gts4', 'gts5', 'gts6',
@@ -73,16 +83,14 @@ def upload_course_prog_data_from_excel(directory, filename, engine, tbl_name='tb
               if_exists='append',
               index=False
               )
-  except:
     print(filename)
-    print(df)
-    
+  except:
     pass
 
 
 # get data from excel doc
 # open template
-directory = 'H:\\Data\\CoB Database\\CES\\Course_program\\'
+directory = 'H:\\Data\\CoB Database\\CES\\Course_program\\Done\\'
 
 for filename in os.listdir(directory):
   if filename.endswith(".xls") or filename.endswith(".py"):
