@@ -1,6 +1,7 @@
 import base64
 
 import plotly
+import plotly.plotly as py
 import plotly.graph_objs as go
 import plotly.offline
 
@@ -21,12 +22,12 @@ from general.db_helper_functions import (
 
 '''--------------------------------- Initialise Parameters  ----------------------------'''
 
-folder = 'C:\\Peter\\CoB\\CES\\2018_Semester_1\\'
+folder = 'H:\\Projects\\CoB\\CES\\School Reporting\\2018 S2\\'
 
 school = 'ACCT'
 acad_career = 'HE'
-start_year = '2014'
-end_year = '2018'
+start_year = '2015'
+end_year = '2019'
 
 
 '''--------------------------------- Connect to Database  ----------------------------'''
@@ -48,7 +49,6 @@ postgres_con, postgres_cur = connect_to_postgres_db(con_string)
 qry = ' SELECT * \n' \
       ' FROM ces.vw146_school_bus_for_graph \n' \
       " WHERE school_name_short ='{0}' " \
-      "   AND level='{1}' " \
       "   AND year >= {2}" \
       "; \n".format(school, acad_career, start_year)
  
@@ -76,12 +76,12 @@ elif acad_career == 'VE':
 
 
 def line_graph_school_measure(df1, school_name, measure='gts',
-                              start_year=2014, end_year=2018,
+                              start_year=2015, end_year=2018,
                               height=400,
-                              width=800,
-                              semester=None):
+                              width=800):
   df_1 = df1.loc[df1['semester'] == 1]
   df_2 = df1.loc[df1['semester'] == 2]
+  df_targets = df1[['year', 'gts_target']].drop_duplicates()
   
   # all traces for plotly
   traces = []
@@ -112,7 +112,7 @@ def line_graph_school_measure(df1, school_name, measure='gts',
     x=x,
     y=df_1[measure].tolist(),
     name='Semester 1  ',
-    text=sem1_text,
+    text=None,
     textfont={'size': 14,
               'color': df_1.iloc[0]['colour_html']},
     line=go.Line(width=2,
@@ -124,7 +124,7 @@ def line_graph_school_measure(df1, school_name, measure='gts',
       symbol='cirle'
     ),
     connectgaps=False,
-    mode='lines+markers+text',
+    mode='lines+markers',
     showlegend=True,
     textposition='bottom right'
   )
@@ -154,9 +154,9 @@ def line_graph_school_measure(df1, school_name, measure='gts',
 
   trace_target = go.Scatter(
     x=x,
-    y=df_1['gts_target'].tolist(),
+    y=df_targets['gts_target'].tolist(),
     name='Target',
-    text=df_1['gts_target'].tolist(),
+    text=df_targets['gts_target'].tolist(),
     textfont={'size': 14,
               'color': rc.RMIT_Black},
     line=go.Line(width=2, color=rc.RMIT_Black),
@@ -210,17 +210,16 @@ def line_graph_school_measure(df1, school_name, measure='gts',
            hidesources=True,
          )
          }
-  filename = folder + 'school_pack_graph_{}_{}_{}_1'.format(df_2.iloc[0]['school_name_short'], measure, end_year)
+  filename = folder + '{}_{}_2018'.format(df_2.iloc[0]['school_name_short'], measure)
   plotly.offline.plot(fig, filename+'.html')
-  #py.image.save_as(fig, filename+'.png')
+  py.image.save_as(fig, filename+'.png')
   return fig
 
 fig = line_graph_school_measure(
                 df_school, df_school.iloc[0]['school_name'],
                 measure='gts',
-                start_year=2014, end_year=2018,
+                start_year=start_year, end_year=end_year,
                 height=600,
-                width=1100,
-                semester=None)
+                width=1100)
 
 

@@ -164,10 +164,10 @@ def make_header():
         html.Img(
           src='data:image/png;base64,{}'.format(logo.decode()),
           style={'height': '120px',
-                 'align': 'centre',
+                 'align': 'center',
                  'margin-top': 15,
-                 'margin-left': 60,
-                 'margin-right': 60,
+                 'margin-left': 80,
+                 'margin-right': 80,
                  }
         ),
       ],
@@ -245,7 +245,7 @@ def make_blue_heading(df1):
             'margin-top': 0,
             'line-height': 'normal'}
   
-  style5 = {'textAlign': 'right',
+  style5 = {'textAlign': 'left',
             'font-size': 22,
             'font-family': 'Sans-serif',
             'font-weight': 'light',
@@ -350,9 +350,9 @@ app.layout = html.Div(
     # Heading
     html.Div(
       className='row',
-      style={'margin-top': 0,
-             'margin-left': 0,
-             'margin-right': 0,
+      style={'margin-top': 4,
+             'margin-left': 4,
+             'margin-right': 4,
              'margin-bottom': 0,
              'backgroundColor': rc.RMIT_White,
              },
@@ -362,8 +362,8 @@ app.layout = html.Div(
     html.Div(
       className='row',
       style={'margin-bottom': 10,
-             'margin-left': 0,
-             'margin-right': 0,
+             'margin-left': 4,
+             'margin-right': 4,
              'backgroundColor': rc.RMIT_DarkBlue,
              },
       children=[
@@ -395,7 +395,7 @@ app.layout = html.Div(
               figure=create_improve_bar(['Pre', 'Post'],
                                         [round(df_courses['gts_pre'].mean(), 1),
                                          round(df_courses['gts_post'].mean(), 1)],
-                                        381,
+                                        377,
                                         180,
                                         maxy=90)
             )
@@ -405,8 +405,8 @@ app.layout = html.Div(
         html.Div(
           className='six columns',
           style={'backgroundColor': rc.RMIT_DarkBlue,
-                 'margin-left': 0,
-                 'margin-right': 0},
+                 'margin-left': 1,
+                 'margin-right': 2},
           children=make_blue_heading(df_courses),
         ),
       ],
@@ -414,8 +414,8 @@ app.layout = html.Div(
     # Second Row
     html.Div(
       className="row",
-      style={'margin-left': 0,
-             'margin-right': 0,
+      style={'margin-left': 4,
+             'margin-right': 4,
              'margin-top': 0},
       children=[
         # Past performance
@@ -460,7 +460,7 @@ app.layout = html.Div(
         ),
         html.Div(
           className='six columns',
-          style={'margin-left': 0,
+          style={'margin-left': 1,
                  'margin-right': 0,
                  'margin-top': 0},
           children=[
@@ -494,7 +494,9 @@ app.layout = html.Div(
     # Courses GTS change Graph Div
     html.Div(
       className='row',
-      style={'margin': 0},
+      style={'margin-left': 4,
+             'margin-right': 4,
+             'margin-top': 0},
       children=[
         # Graph Title
         html.Div(
@@ -508,7 +510,7 @@ app.layout = html.Div(
                  'font-weight': 'normal',
                  'line-height': '150%',
                  'align': 'center',
-                 'margin-top': 0,
+                 'margin-top': 2,
                  },
         ),
         # Courses GTS change Graph
@@ -532,9 +534,9 @@ app.layout = html.Div(
     # School Performance
     html.Div(
       className="row",
-      style={'margin-left': 0,
-             'margin-right': 0,
-             'margin-top': 0,
+      style={'margin-left': 4,
+             'margin-right': 4,
+             'margin-top': 10,
              'backgroundColor': rc.RMIT_Red,
              },
       children=[
@@ -554,7 +556,7 @@ app.layout = html.Div(
                      'line-height': '140%',
                      'margin-left': 10,
                      'margin-right': 0,
-                     'margin-top': 0,
+                     'margin-top': 10,
                      'margin-bottom': 0,
                      },
             ),
@@ -588,7 +590,7 @@ app.layout = html.Div(
             ),
             html.P(
               children='{}: {}%'.format(
-                year-1,
+                year,
                 int(round(
                   100.0 * len(df_courses.query('gts_post >= school_post_gts_target'))/len(df_courses),
                   0))
@@ -623,8 +625,8 @@ app.layout = html.Div(
                      'font-family': 'Sans-serif',
                      'color': rc.RMIT_Black,
                      'line-height': '140%',
-                     'margin-left': 0,
-                     'margin-right': 0,
+                     'margin-left': 1,
+                     'margin-right': 1,
                      'margin-top': 0,
                      'margin-bottom': 2,
                      'backgroundColor': rc.RMIT_White,

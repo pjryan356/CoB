@@ -7,6 +7,8 @@ from dash.dependencies import Input, Output
 from collections import OrderedDict
 from tabulate import tabulate
 
+from IPython.core.interactiveshell import InteractiveShell
+
 import sys
 sys.path.append('c:\\Peter\\GitHub\\CoB\\')
 
@@ -164,6 +166,7 @@ con_string = "host='{0}' " \
              "user='{2}' " \
              "password='{3}' " \
              "".format(postgres_host, postgres_dbname, postgres_user, postgres_pw)
+
 postgres_con, postgres_cur = connect_to_postgres_db(con_string)
 
 '''------------------------Get Images---------------------'''
@@ -485,11 +488,10 @@ def create_course_options(df1, school_code=None):
     f_df = df1
   
   # Create Course options dropdown
-  f_df.sort_values(['course_code_ces'])
   
   options = [{'label': '{0}: {1}'.format(r['course_code_ces'],
                                          r['course_name']),
-              'value': r['course_code_ces']} for i, r in f_df.iterrows()]
+              'value': r['course_code_ces']} for i, r in f_df.sort_values(['course_code_ces']).iterrows()]
   options.insert(0, {'label': 'All', 'value': None})
   return options
 
@@ -1124,72 +1126,80 @@ def make_course_pack(course_code_ces):
 
 def make_header_div(df1):
   # creates course header with pre defined logo
-  course_code = df1['course_code_ces'].tolist()[0]
-  course_name = df1['course_name'].tolist()[0]
-  school_name = df1['school_name'].tolist()[0]
-  
-  div = html.Div(
-    [
-      # Left - Headings
-      html.Div(
-        [
-          # Heading
-          html.Div(
-            children='Course Pack',
-            style={'textAlign': 'left',
-                   'font-size': 18,
-                   'color': rc.RMIT_Black,
-                   'font-weight': 'bold',
-                   'margin-left': 2
-                   },
-          ),
-          # Sub Heading
-          html.Div(
-            [
-              html.P(
-                children='{}: {}'.format(course_code, course_name),
-                style={'textAlign': 'left',
-                       'font-size': 16,
-                       'color': rc.RMIT_Black,
-                       'font-weight': 'bold',
-                       'margin-bottom': 0,
-                       'margin-left': 2
-                       },
-              ),
-              html.P(
-                children='{}'.format(school_name),
-                style={'textAlign': 'left',
-                       'font-size': 16,
-                       'color': rc.RMIT_Black,
-                       'font-weight': 'bold',
-                       'margin-left': 10,
-                       'margin-top': 0},
-              ),
-            ],
-          ),
-        ],
-        className='seven columns'
-      ),
-      # Right - Image (logo)
-      html.Div(
-        [
-          html.Img(
-            src='data:image/png;base64,{}'.format(logo.decode()),
-            style={'height': '80px',
-                   'align': 'middle',
-                   'vertical-align': 'middle',
-                   'margin-top': 2}
-          ),
-        ],
-        className='five columns',
-        style={'align': 'middle',
-               'vertical-align': 'middle'
-               }
-      ),
-    ],
-    className='twelve columns',
-    style={'border': 'solid'}
-  )
+  try:
+    course_code = df1['course_code_ces'].tolist()[0]
+    course_name = df1['course_name'].tolist()[0]
+    school_name = df1['school_name'].tolist()[0]
+    div = html.Div(
+      [
+        # Left - Headings
+        html.Div(
+          [
+            # Heading
+            html.Div(
+              children='Course Pack',
+              style={'textAlign': 'left',
+                     'font-size': 18,
+                     'color': rc.RMIT_Black,
+                     'font-weight': 'bold',
+                     'margin-left': 2
+                     },
+            ),
+            # Sub Heading
+            html.Div(
+              [
+                html.P(
+                  children='{}: {}'.format(course_code, course_name),
+                  style={'textAlign': 'left',
+                         'font-size': 16,
+                         'color': rc.RMIT_Black,
+                         'font-weight': 'bold',
+                         'margin-bottom': 0,
+                         'margin-left': 2
+                         },
+                ),
+                html.P(
+                  children='{}'.format(school_name),
+                  style={'textAlign': 'left',
+                         'font-size': 16,
+                         'color': rc.RMIT_Black,
+                         'font-weight': 'bold',
+                         'margin-left': 10,
+                         'margin-top': 0},
+                ),
+              ],
+            ),
+          ],
+          className='seven columns'
+        ),
+        # Right - Image (logo)
+        html.Div(
+          [
+            html.Img(
+              src='data:image/png;base64,{}'.format(logo.decode()),
+              style={'height': '80px',
+                     'align': 'middle',
+                     'vertical-align': 'middle',
+                     'margin-top': 2}
+            ),
+          ],
+          className='five columns',
+          style={'align': 'middle',
+                 'vertical-align': 'middle'
+                 }
+        ),
+      ],
+      className='twelve columns',
+      style={'border': 'solid'}
+    )
+  except:
+    div = html.Div(
+      [],
+      className='twelve columns',
+      style={'border': 'solid'}
+    )
+    
+
   return div
 
 
@@ -1320,4 +1330,4 @@ for stylesheet in stylesheets:
   app.css.append_css({"external_url": "{}".format(stylesheet)})
 
 if __name__ == '__main__':
-  app.run_server(port=8050, host='127.0.0.1', debug=True)
+  app.run_server(port=8050, host='127.0.0.1', debug=False)
