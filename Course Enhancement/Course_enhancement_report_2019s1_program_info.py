@@ -335,7 +335,7 @@ def get_course_comments(course_list, year, semester, cur, tbl='vw202_course_comm
              year, semester,
              list_to_text(course_list),
              year, semester)
-  return db_extract_query_to_dataframe(qry, cur, print_messages=False)
+  return db_extract_query_to_dataframe(qry, cur, print_messages=True)
 
 
 def get_course_comments_themes(course_list, year, semester, cur, tbl='vw301_course_thematic', schema='ces'):

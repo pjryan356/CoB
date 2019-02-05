@@ -50,57 +50,7 @@ con, cur = connect_to_postgres_db(con_string)
 
 '''-------------------------------------------- Get Data -------------------------------------'''
  
-def qry_school_history(school_name_short,
-                       start_year=2014,
-                       semester=None,
-                       level='HE',
-                       schema='ces',
-                       table='vw998_school_from_course_summaries'):
-  qry = ' SELECT t1.* \n' \
-        ' FROM ({0}) t1 \n' \
-        " WHERE school_name_short = '{1}' \n" \
-        '   AND year >= {2} \n' \
-        "   AND level = '{3}' \n" \
-        ''.format(qry_school_history_details(schema, table),
-                  school_name_short, start_year, level)
-  if semester != None:
-    qry += ' AND semester = {} \n'.format(semester)
-  
-  qry += 'ORDER BY year, semester, level \n'
-  return qry
-  
-def qry_school_history_details(schema, table):
-  qry = ' SELECT \n' \
-        '   sch.*, \n' \
-        '   sd.school_name_short, \n' \
-        '   sd.colour_html, \n' \
-        '   sd.colour_alt_html, \n' \
-        '   st.gts_target, \n' \
-        '   st.osi_target \n' \
-        ' FROM ( \n' \
-        '   SELECT \n' \
-        '     year, semester, level, \n' \
-        '     school_code, school_name, \n' \
-        '     population, osi, gts \n' \
-        '   FROM {0}.{1} \n' \
-        '   ) sch \n' \
-        ' LEFT JOIN ( \n' \
-        '   SELECT \n' \
-        '     school_code, \n' \
-        '     school_name_short, \n' \
-        '     colour_html,' \
-        '     colour_alt_html \n' \
-        '   FROM lookups.vw_bus_schools_colours) sd ON sch.school_code = sd.school_code::text \n' \
-        ' LEFT JOIN ( \n' \
-        '   SELECT \n' \
-        '     year::integer AS year, \n' \
-        '     school_code, \n' \
-        '     gts_target, \n' \
-        '     osi_target \n' \
-        '   FROM ces.tbl_school_targets) st ON st.school_code = sch.school_code::text AND sch.year::int = st.year::int \n' \
-        ' ORDER BY year, semester, level \n' \
-        ''.format(schema, table)
-  return qry
+
 
 
 def line_trace_school_measure(school_name_short, measure='gts',

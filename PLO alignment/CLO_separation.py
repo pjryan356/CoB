@@ -11,7 +11,7 @@ sys.path.append('c:\\Peter\\GitHub\\CoB\\')
 
 def get_school_name(school_code):
   if school_code == '610P':
-    return 'CBO'
+    return 'CPO'
   if school_code == '615H':
     return 'ACCT'
   if school_code == '620H':
@@ -145,10 +145,10 @@ def get_CLOs(text, cid=None):
     return['']
 
 # open template
-directory = 'H:\\Projects\\CoB\\Program Transformation\\CLO mapping\\'
-clo_filename = 'CLOs_cob_unedited.xlsx'
-template = 'CLO_template.xlsx'
-savefile = 'CLO_cob.xlsx'
+directory = 'H:\\Projects\\CoB\\Program Transformation\\CLO mapping\\Success\\'
+clo_filename = 'CLOs_cob_success.xlsx'
+template = 'CLO_template_success.xlsx'
+savefile = 'CLOs_cob_success_2_extra.xlsx'
 
 
 # open template
@@ -163,22 +163,22 @@ clo_ws = wb.active
 
 j = 2
 for i, r in clo_df.iterrows():
-  if r['Status'] in ['Republished', 'Published']:
-    CLO_list = []
-    CLO_list = get_CLOs(r['Learning Outcomes'], r['Course ID'])
-    k = 1
-    for clo in CLO_list:
-      clo_ws.cell(row=j, column=1).value = r['Course ID']
-      clo_ws.cell(row=j, column=2).value = r['Course Title']
-      clo_ws.cell(row=j, column=3).value = r['School ID']
-      clo_ws.cell(row=j, column=4).value = get_school_name(r['School ID'])
-      clo_ws.cell(row=j, column=5).value = 'CLO{}'.format(k)
-      clo_ws.cell(row=j, column=6).alignment = Alignment(wrapText=True)
-      clo_ws.cell(row=j, column=6).value = clo
-      clo_ws.cell(row=j, column=7).value = r['Status']
-      clo_ws.cell(row=j, column=8).value = r['Updated']
-      j += 1
-      k += 1
+  CLO_list = []
+  CLO_list = get_CLOs(r['Learning Outcomes'], r['Course ID'])
+  k = 1
+  for clo in CLO_list:
+    clo_ws.cell(row=j, column=1).value = r['Course ID']
+    clo_ws.cell(row=j, column=2).value = r['Course Title']
+    clo_ws.cell(row=j, column=3).value = r['School ID']
+    clo_ws.cell(row=j, column=4).value = get_school_name(r['School ID'])
+    clo_ws.cell(row=j, column=5).value = 'CLO{}'.format(k)
+    clo_ws.cell(row=j, column=6).alignment = Alignment(wrapText=True)
+    clo_ws.cell(row=j, column=6).value = clo
+    clo_ws.cell(row=j, column=7).value = r['Version']
+    clo_ws.cell(row=j, column=8).value = r['Status']
+    clo_ws.cell(row=j, column=9).value = r['Publish/Unpublish Time']
+    j += 1
+    k += 1
 wb.save(directory+savefile)
 
 
