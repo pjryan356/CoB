@@ -32,7 +32,7 @@ def upload_course_data_from_excel(directory, filename, engine,
                      sheet_name='Sheet1',
                      skiprows=4,
                      usecols=[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27],
-                     skipfooter=13)
+                     skipfooter=5)
 
   df.columns = ['course_code_ces','all_flag', 'class_nbr', 'term_code', 'section_code', 'course_name',
                 'teaching_staff', 'course_coordinator', 'career',
@@ -131,8 +131,8 @@ def upload_course_data_from_excel(directory, filename, engine,
   except Exception as e:
     print('teacher input failed' + filename)
     pass
-
-
+  
+  print(df_teacher.iloc[-1])
   
   
 # get data from excel doc

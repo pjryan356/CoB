@@ -25,9 +25,9 @@ postgres_con = postgres_engine.connect()
 
 
 # Inputs
-directory = input("Directory: ")
-filename = input("Filename: ")
-date_tbl_name = input("File_date: ")
+directory = 'H:\\Projects\\CoB\\CES\\Response Rate\\2019\\Semester 1\\excel\\' #input("Directory: ")
+filename = 'response-rate-report-24.5.xlsx' #input("Filename: ")
+date_tbl_name = '20190524' #input("File_date: ")
 
 # get data from excel doc
 df = pd.read_excel(directory + filename,

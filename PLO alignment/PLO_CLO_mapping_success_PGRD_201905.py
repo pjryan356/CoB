@@ -47,7 +47,7 @@ def adjust_excel_rows(ws, skip_rows=0, max_rows=False, default_col='A', default_
 
 # open template
 directory = 'H:\\Projects\\CoB\\Program Transformation\\CLO mapping\\Success\\'
-plo_clo_filename = 'PLOs_CLOs_manually_editted_success_UGRD.xlsx'
+plo_clo_filename = 'PLOs_CLOs_manually_editted_success_PGRD.xlsx'
 
 template = 'PLO_CLO_alignment_template_success_v1.4.xlsx'
 
@@ -250,7 +250,7 @@ for i_prg, prg in df_programs.iterrows():
     ws = wb[sheet]
     ws.protection.set_password('{}'.format(prg['program_code']))
     
-  save_filename = 'UGRD\\PLO_CLO_alignment_{}_{}_24Apr2019.xlsx'.format(prg['school_abbr'], prg['program_code'])
+  save_filename = 'PGRD\\PLO_CLO_alignment_{}_{}_07May2019.xlsx'.format(prg['school_abbr'], prg['program_code'])
   wb.save(directory+save_filename)
   
   print('{}\tTime:{}\t{}'.format(prg['program_code'], datetime.now().strftime('%H:%M:%S'), datetime.now() - startTime))
