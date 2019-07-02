@@ -28,9 +28,9 @@ def upload_sim_ces_data_from_excel(directory, filename, engine,
   
   # gets ces comments data the suuplied excel files and uploads them to postrgres
   df = pd.read_excel(directory + filename,
-                     sheet_name='Summary',
+                     sheet_name='RMIT Lec',
                      skiprows=1,
-                     usecols=[0,1,2,3,4,8,9,10,11,12,13,14],
+                     usecols=[6,7,8,9,11,16,17,18,19,20,21,22],
                      skipfooter=0)
 
   df.columns = ['subject', 'catalog', 'course_name', 'section_code', 'teaching_staff',
@@ -39,8 +39,8 @@ def upload_sim_ces_data_from_excel(directory, filename, engine,
                 'comment_type', 'comment_text'
                 ]
   
-  df['year'] = int(2019)
-  df['semester'] = int(1)
+  df['year'] = int(2017)
+  df['semester'] = int(2)
   
   df['course_code'] = df['subject'] + df['catalog'].map(str)
   
@@ -52,7 +52,7 @@ def upload_sim_ces_data_from_excel(directory, filename, engine,
   ]]
   
   df_ces = df_ces.drop_duplicates()
-  #print(df_ces)
+  print(df_ces)
   
   try:
     df_ces .to_sql(
@@ -89,7 +89,6 @@ def upload_sim_ces_data_from_excel(directory, filename, engine,
   
   print (df_ces_com)
   
-  '''
   try:
     df_ces_com.to_sql(
       name='tbl_course_teacher_comments',
@@ -102,12 +101,11 @@ def upload_sim_ces_data_from_excel(directory, filename, engine,
     print('comment input failed' + filename)
     print(e)
     pass
-  '''
   
 # get data from excel doc
 # open template
 directory = 'H:\\Data\\SIM\\'
-filename = 'SIM CES Jan 2019.xlsx'
+filename = 'SIM CES Jul 2017 Local.xlsx'
 
 
 print(os.path.join(directory, filename))

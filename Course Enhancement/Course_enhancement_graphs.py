@@ -9,7 +9,6 @@ import sys
 sys.path.append('c:\\Peter\\GitHub\\CoB\\')
 
 import general.RMIT_colours as rc
-from Course_enhancement_functions import get_colour
 
 colourList = [rc.RMIT_Red,
               rc.RMIT_Green,
@@ -27,7 +26,52 @@ colourList = [rc.RMIT_Red,
               rc.RMIT_Teal,
               rc.RMIT_Arctic
               ]
-              
+
+def get_colour(measure, level='HE'):
+  if measure == 'osi':
+    return rc.RMIT_Green
+  if measure == 'gts':
+    return rc.RMIT_DarkBlue
+  
+  if level == 'HE':
+    #  Perceived Effort
+    if measure == 'gts2':
+      return rc.RMIT_Red
+    if measure == 'gts5':
+      return rc.RMIT_Pink
+    if measure == 'gts6':
+      return rc.RMIT_Orange
+    
+    # Student Engagement (Impact)
+    if measure == 'gts3':
+      return rc.RMIT_Blue
+    if measure == 'gts4':
+      return rc.RMIT_Azure
+    if measure == 'gts1':
+      return rc.RMIT_Aqua
+  
+  if level == 'VE':
+    
+    # Student Engagement (Practise)
+    if measure == 'gts2':
+      return rc.RMIT_Purple
+    if measure == 'gts3':
+      return rc.RMIT_Lavender
+    
+    # Perceived Capability
+    if measure == 'gts1':
+      return rc.RMIT_Red
+    if measure == 'gts4':
+      return rc.RMIT_Pink
+    
+    # Student Engagement (Impact)
+    if measure == 'gts5':
+      return rc.RMIT_Blue
+    if measure == 'gts6':
+      return rc.RMIT_Azure
+  
+  return rc.RMIT_Black
+
 def line_graph_measure_surveys(df1,
                                course_code,
                                measures=['gts', 'osi'],

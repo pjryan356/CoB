@@ -40,7 +40,7 @@ postgres_con = postgres_engine.connect()
 # get data from sams
 sams_qry = qry_program_details()
 print(sams_qry)
-int('f')
+
 try:
   df = pd.read_sql(sql=sams_qry, con=sams_engine)
 except:

@@ -294,6 +294,7 @@ def qry_program_course_structure(program_code=None, active=True):
           t1.effdt
         FROM PS_ACAD_PROG_TBL t1
         WHERE t1.EFF_STATUS = 'A'
+          AND acad_group = 'BUS'
   """
   if program_code != None:
     qry += " AND acad_prog = '{0}' \n".format(program_code)

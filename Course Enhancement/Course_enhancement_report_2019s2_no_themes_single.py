@@ -33,6 +33,10 @@ from general.db_helper_functions import (
   db_extract_query_to_dataframe
 )
 
+from general.postgres_queries import (
+  qry_course_enhancement_list_2019s2
+)
+
 '''
 This script is designed to produce the Course Enhancement Data Packs.
   On running it produces a weblink with two dropdown menus
@@ -45,65 +49,63 @@ The data is pulled into 4 pandas dataframes
     contains the course details of the courses undergoing course enhancement
     it is mainly used to produce the drop down menus and the queries for other dataframes
       level - academic level [HE, VE]
-      school_code, - 4 character code (e.g. 650T = Vocational Businesss Eduction)
-      course_code, - 8-9 character code
-      course_code_ces, - ces course_code which includes clusters and vertical studios (e.g. -CL00)
-      cluster_code, - This is redundant information
-      school_name, - Full school name
-      course_name - Full course name
+      school_code,
+      course_code - ces course_code which includes clusters and vertical studios (-CL00),
+      course_code_alt - regular course_code,
+      school_name,
+      course_name
 
   df_ce_ces (Original source - CES data summaries)
     contains the course level ces results for the past 5 years not all of the columns are used
-      year, semester - of ces data
+      year, emester - of ces data
       level - academic level [HE, VE] used to determine which GTS questions were asked
-      course_code - 8-9 character code
-      course_code_ces, - ces course_code which includes clusters and vertical studios (e.g. -CL00)
-      reliability - [G (good), S (sufficient), N (insufficient)] based on population and osi_count
+      course_code -
+      reliability - [G (good), S (sufficient), N (insufficient)] based on population and osi_response_count
       gts, gts_mean - gts percent agree [0-100] and mean gts [1-5]
       osi, osi_mean - osi percent agree [0-100] and mean osi [1-5]
       gts1, gts2, gts3, gts4, gts5, gts6 - percent agree for individual gts questions
-      course_coordinator - not used
-      population - total survey population
-      osi_count - number of students who responded to survey from the population
-      gts_count - not used
+      course_name
+      course_coordinator
+      population
+      osi_response_count
+      gts_response_count
   
   df_ce_comments (Original source - file supplied by Student Surveys Team)
     contains the de-identified and censored CES comments for the courses
     comments are from the selected year and semester (most recent available (or equivalent) survey results)
-      program_code - 5 character program code of student, '' if 5 or less students from the program were enrolled in the course
+      program_code - program code of student, '' if 5 or less students from the program were enrolled in the course
       best - answer to What was the best aspect of this course?
       improve - answer to What part of this course needs the most improvement?
-      course_code - as above
-      course_code_ces - as above
-      
-  df_ce_comment_themes (Original source - produced by CoB L&T team)
-    contains the comment themes identified for the course by the L&T staff (from the student comments for the selected year and semester)
-      course_code - as above
-      course_code_ces - as above
-      themes - These are comment themes written by the L&T teams.
-      
+      course_code
+  
+  df_ce_prg_enrl (Original source - SAMS database)
+    contains some enrolment details for the course (not all columns are used)
+    enrolments are the selected year and semester (current, previous or previous equivalent)
+      term_code
+      course_code
+      program_code - Non CoB program codes are combined as 'Non CoB'
+      population - student enrolments in course and program
+      program_name -
+      school_code - Non CoB school codes are listed as 'Non CoB'
+      school_name - Non CoB school names are listed as 'Non CoB'
+      school_name_short - Non CoB school names are listed as 'Non CoB'
+      school_colour - each CoB school has been assigned a colour from the RMIT palette for consistency
+      college - college SAMS code
+      college_name - Full college names
+      college_name_short - changes BUS to CoB
+      college_colour - each college has been assigned a colour from the RMIT palette for consistency
+
   df_ce_prg_ces (Original source - file supplied by Student Surveys Team)
-    contains the break down of ces results by program within the selected course.
-    This data is also used to produce the: program; school; and college; student distribution pie charts
       year, semester - of ces data
       level - academic level [HE, VE] used to determine which GTS questions were asked
-      course_code, - as above
-      cluster_code - not used
-      course_code_ces, - ces course_code which includes clusters and vertical studios (e.g. -CL00)
-      program_code - as above
+      course_code -
+      program_code -
       reliability - [G (good), S (sufficient), N (insufficient)] based on population and osi_response_count
       gts, gts_mean - gts percent agree [0-100] and mean gts [1-5]
       osi, osi_mean - osi percent agree [0-100] and mean osi [1-5]
-      population - as above
-      osi_count - as above
-      gts_count - not used
-      program_name - full program name
-      school_code - as above
-      school_name - abbreviated school name
-      school_colour - HEX colour code assigned to school
-      college - college of program
-      college_name_short - abbreviated college name
-      college_colour - HEX colour code assigned to college
+      population
+      osi_count
+      gts_count
 '''
 
 '''------------------------------------- Get Inputs  --------------------------------'''
@@ -113,17 +115,17 @@ The data is pulled into 4 pandas dataframes
 
 set_values = input("Do you want to manually input the semester/term variables [Y/N]: ")
 if set_values == 'Y':
-  end_year = input("Last year of CES data (Current): ")
-  start_year = input("First year of CES data (Recommend -4 years): ")
+  end_year = int(input("Last year of CES data (Current): "))
+  start_year = int(input("First year of CES data (Recommend -4 years): "))
   
-  year = input("Year of Course Enhancement: ")
-  semester = input("Semester of Course Enhancement: ")
+  year = int(input("Year of Course Enhancement: "))
+  semester = int(input("Semester of Course Enhancement: "))
   
-  enrl_year = input("Year of demographics (Current or -1): ")
-  enrl_semester = input("Semester of demographics (Current): ")
+  enrl_year = int(input("Year of demographics (Current or -1): "))
+  enrl_semester = int(input("Semester of demographics (Current): "))
   
-  comments_year = end_year
-  comments_semester = input("Semester of comments (Current): ")
+  comments_year = int(end_year)
+  comments_semester = int(input("Semester of comments (Current): "))
 else:
   end_year = 2018
   start_year = 2015
@@ -241,8 +243,6 @@ def make_comments_rows(df1, empty_statement='No comments provided'):
   ##    Postrges does not handle apostrophe and single quote marks well, they are often converted to a ?
   ##    hence all ? are converted to ', this is not perfect but creates less errors overall
   df1 = df1[['program_code', 'best', 'improve']]
-  #print(len(df1))
-  #print(tabulate(df1, headers='keys'))
   try:
     if len(df1) > 0:
       rows = [
@@ -250,7 +250,6 @@ def make_comments_rows(df1, empty_statement='No comments provided'):
           [html.Td(df1.iloc[i][col].replace("?", "'")) for col in df1.columns]
         ) for i in range(len(df1))
       ]
-      #print(rows)
     else:
       rows = [html.Tr([html.Td(''), html.Td(empty_statement), html.Td('')])]
   except:
@@ -262,6 +261,7 @@ def make_comments_rows(df1, empty_statement='No comments provided'):
 
 '''----------------------------- create data extraction functions -------------------------------------'''
 
+
 def qry_course_enhancement_list(year, semester, tbl='vw100_courses', schema='course_enhancement'):
   # Returns a dataframe of the courses undergoing enhancement course in year, semester from db (cur)
   qry = " SELECT DISTINCT \n" \
@@ -272,9 +272,7 @@ def qry_course_enhancement_list(year, semester, tbl='vw100_courses', schema='cou
         " FROM ( \n" \
         "   SELECT level, school_code, course_code, course_code_ces, cluster_code  \n" \
         "	  FROM {0}.{1} \n" \
-        "   WHERE year = {2} AND semester = {3} \n" \
-        "       AND la_selected = 'True' \n" \
-        "       AND school_code = '650T' \n" \
+        "   WHERE year = {2} AND semester = {3} AND course_code = 'BUSM3229'\n" \
         "   ) ce \n" \
         " LEFT OUTER JOIN ( \n" \
         "   SELECT * FROM lookups.vw_course_details_recent \n" \
@@ -282,12 +280,11 @@ def qry_course_enhancement_list(year, semester, tbl='vw100_courses', schema='cou
         " ORDER BY ce.school_code, ce.course_code \n" \
         "".format(schema, tbl,
                   year, semester)
-  #print (qry)
   return qry
 
 def get_course_enhancement_list(year, semester, cur, tbl='vw100_courses', schema='course_enhancement'):
   # Returns a dataframe of the courses undergoing enhancement course in year, semester from db (cur)
-  qry = qry_course_enhancement_list(year, semester, 'vw100_courses', schema)
+  qry = qry_course_enhancement_list(year, semester, tbl, schema)
   return db_extract_query_to_dataframe(qry, cur, print_messages=False)
 
 
@@ -346,17 +343,6 @@ def get_course_comments(course_list, year, semester, cur, tbl='vw202_course_comm
   return db_extract_query_to_dataframe(qry, cur, print_messages=False)
 
 
-def get_course_comments_themes(course_list, year, semester, cur, tbl='vw301_course_thematic', schema='ces'):
-  ### Get micorsurgery course themes
-  qry = " SELECT course_code, course_code_ces, themes \n" \
-        " FROM  {0}.{1}\n" \
-        " WHERE year = {2} AND semester = {3}  \n" \
-        "     AND course_code_ces IN {4} \n" \
-        "".format(schema, tbl,
-                  year, semester,
-                  list_to_text(course_list))
-  return db_extract_query_to_dataframe(qry, cur, print_messages=False)
-
 def get_course_program_ces_data(course_list, start_year, end_year, cur, tbl='vw115_course_program', schema='ces'):
   # Returns a dataframe with CES data for courses in course list
   qry = ' SELECT \n' \
@@ -407,32 +393,24 @@ def get_course_program_ces_data(course_list, start_year, end_year, cur, tbl='vw1
 '''-------------------------------------------- Create Dataframes -------------------------------------'''
 df_ce = get_course_enhancement_list(year, semester,
                                     cur=postgres_cur)
-#print(tabulate(df_ce, headers='keys'))
-
 df_schools = df_ce[['school_code', 'school_name']].drop_duplicates()
+
 df_ce_ces = get_course_ces_data(df_ce['course_code_ces'].tolist(),
                                 start_year,
                                 end_year,
                                 cur=postgres_cur)
 
-print(tabulate(df_ce_ces[:10], headers='keys'))
+
 df_ce_comments = get_course_comments(df_ce['course_code_ces'].tolist(),
                                      comments_year, comments_semester,
                                      cur=postgres_cur)
 
-print(tabulate(df_ce_comments[:10], headers='keys'))
-df_ce_comment_themes = get_course_comments_themes(df_ce['course_code_ces'].tolist(),
-                                                  comments_year, comments_semester,
-                                                  cur=postgres_cur)
-
-print(tabulate(df_ce_comment_themes[:10], headers='keys'))
 
 df_ce_prg_ces = get_course_program_ces_data(df_ce['course_code_ces'].tolist(),
                                             start_year,
                                             end_year,
                                             cur=postgres_cur)
 
-print(tabulate(df_ce_prg_ces[:10], headers='keys'))
 
 '''----------------------------- create dash functions -------------------------------------'''
 def create_school_options():
@@ -451,7 +429,7 @@ def create_course_options(df1, school_code=None):
     f_df = df1.loc[df_ce['school_code'] == school_code]
   else:
     f_df = df1
-  #print(f_df)
+  
   # Create Course options dropdown
   
   options = [{'label': '{0}: {1}'.format(r['course_code_ces'],
@@ -481,10 +459,10 @@ def make_program_page(course_code_ces, df1_prg_ces, df1_enrol, program_codes):
           html.P(
             [dcc.Markdown('**Student cohorts ({} Semester {})** '
                           '\u00A0 Population: {}'
-                          ''.format(end_year, semester,
+                          ''.format(end_year, enrl_semester,
                                     get_course_pop(df1_enrol, course_code_ces,
                                                    year=end_year,
-                                                   semester=semester)))
+                                                   semester=enrl_semester)))
              ],
             style={'fontSize': 24,
                    'margin-left': 20, })
@@ -585,15 +563,22 @@ def make_course_pack(course_code_ces):
   df1_ce = get_course_data(df_ce, course_code_ces)
   df1_ces = get_course_data(df_ce_ces, course_code_ces)
   df1_comments = get_course_data(df_ce_comments, course_code_ces)
-  df1_themes = get_course_data(df_ce_comment_themes, course_code_ces)
   df1_prg_ces = get_course_data(df_ce_prg_ces, course_code_ces)
+
+  print(tabulate(df1_ce, headers='keys'))
+  print(tabulate(df1_ces, headers='keys'))
+  print(tabulate(df1_comments, headers='keys'))
+  print(tabulate(df1_prg_ces, headers='keys'))
   
   # get top 5 programs in most recent semester
   df1_enrl = df1_prg_ces.loc[(df1_prg_ces['year'] == end_year) &
-                             (df1_prg_ces['semester'] == semester)]
+                             (df1_prg_ces['semester'] == enrl_semester)]
   program_codes = df1_enrl.sort_values('population', ascending=False).head(n=5)['program_code'].tolist()
   program_codes = list(OrderedDict.fromkeys(program_codes))
-  
+
+  print(tabulate(df1_enrl, headers='keys'))
+
+
   try:
     level = df1_ces['level'].tolist()[-1]
   except:
@@ -601,12 +586,6 @@ def make_course_pack(course_code_ces):
   
   gts_list = get_gts_questions(level)
   
-  # create themes text
-  themes_txt = 'No themes identified.'  # Default themse text
-  try:
-    themes_txt = df1_themes.iloc[0].themes
-  except:
-    pass
   
   # create Data pack in correct layout
   child = [
@@ -901,7 +880,7 @@ def make_course_pack(course_code_ces):
                     'The **pie charts** show what program, school and college the students in the course are from.'
                     ' Non CoB programs are grouped together.'
                     ' The pie charts are based on {} Semester {} survey population.'
-                    ''.format(end_year, semester))
+                    ''.format(end_year, enrl_semester))
                   ],
                   style={'textAlign': 'left',
                          'font-size': 16,
@@ -929,7 +908,7 @@ def make_course_pack(course_code_ces):
                     'The **OSI and GTS Data by program** are graphed for the cohorts from the 5 largest programs.'
                     ' The 5 largest program are determined using {} Semester {} survey population.'
                     ' These charts can help to determine how different cohorts view the course'
-                    ''.format(end_year, semester))
+                    ''.format(end_year, enrl_semester))
                   ],
                   style={'textAlign': 'left',
                          'font-size': 16,
@@ -951,19 +930,6 @@ def make_course_pack(course_code_ces):
                            'margin-bottom': 0,
                            'margin-left': 20
                            },
-                ),
-                html.P(
-                  [dcc.Markdown(
-                    'The **Themes Identified** are a summation of the main themes from the student comments.'
-                    ' The full list of student comments from the course are also provided.')
-                  ],
-                  style={'textAlign': 'left',
-                         'font-size': 16,
-                         'color': rc.RMIT_Black,
-                         'font-weight': 'normal',
-                         'margin-bottom': 0,
-                         'margin-left': 20
-                         },
                 ),
               ],
             ),
@@ -1006,43 +972,6 @@ def make_course_pack(course_code_ces):
           ],
           className='twelve columns',
           style={'text-align': 'left'},
-        ),
-        # Third row - Comment Themes
-        html.Div(
-          children=[
-            # Heading
-            html.P(
-              [dcc.Markdown('Themes Identified')],
-              style={'textAlign': 'center',
-                     'font-size': 20,
-                     'color': rc.RMIT_Black,
-                     'font-weight': 'bold',
-                     'text-decoration': 'underline',
-                     'margin-top': 0,
-                     'margin-bottom': 0,
-                     'margin-left': 20,
-                     'margin-right': 20},
-            ),
-            # Themes text
-            html.P(
-              id='theme_comments',
-              children=[dcc.Markdown('{}'.format(themes_txt))],
-              style={'textAlign': 'center',
-                     'font-size': 18,
-                     'color': rc.RMIT_Black,
-                     'font-weight': 'normal',
-                     'margin-top': 0,
-                     'margin-bottom': 0,
-                     'margin-left': 20,
-                     'margin-right': 20},
-            )
-          ],
-          className='twelve columns',
-          style={
-            'border': 'solid',
-            'border-color': '{}'.format(rc.RMIT_Green),
-            'border-width': '10pt',
-            'margin-bottom': 20},
         ),
         # Fourth row - Comments table
         html.Div(
@@ -1295,4 +1224,4 @@ for stylesheet in stylesheets:
   app.css.append_css({"external_url": "{}".format(stylesheet)})
 
 if __name__ == '__main__':
-  app.run_server(port=8050, host='127.0.0.2', debug=False)
+  app.run_server(port=8050, host='127.0.0.5', debug=False)

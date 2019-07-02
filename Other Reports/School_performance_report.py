@@ -203,36 +203,6 @@ def line_graph_school_measure(df1, school, level='HE', measure='gts',
   return fig
 
 
-
-level = 'HE'
-for school in ('ACCT', 'EFM', 'MGT', 'GSBL', 'BITL'):
-  fig = line_graph_school_measure(
-    df_schools_data,
-    school,
-    level='HE',
-    measure='gts',
-    start_year=start_year,
-    end_year=end_year,
-    height=600,
-    width=1100,
-    show_targets=False)
-
-
-school = 'VBE'
-for level in ['HE', 'VE']:
-  fig = line_graph_school_measure(
-    df_schools_data,
-    school,
-    level=level,
-    measure='gts',
-    start_year=start_year,
-    end_year=end_year,
-    height=600,
-    width=1100,
-    show_targets=False
-  )
-
-
 def line_trace_school_measure(df1,
                               school,
                               level='HE',
@@ -370,14 +340,46 @@ def create_school_RMIT_graph(
   py.image.save_as(fig, filename + '.png')
   return fig
 
+
+print(tabulate(df_schools_data, headers='keys'))
 '''
 fig = create_school_RMIT_graph(
   df1=df_schools_data,
-  measure='gts',
+  measure='osi',
   start_year=2015, end_year=2018,
   semester=2,
   folder='H:\\Projects\\CoB\\CES\\School Reporting\\2018 S2\\',
   height=400,
   width=800,
   background='#FFFFFF')
+
+
+
+level = 'HE'
+for school in ('ACCT', 'EFM', 'MGT', 'GSBL', 'BITL'):
+  fig = line_graph_school_measure(
+    df_schools_data,
+    school,
+    level='HE',
+    measure='gts',
+    start_year=start_year,
+    end_year=end_year,
+    height=600,
+    width=1100,
+    show_targets=False)
+
+
+school = 'VBE'
+for level in ['HE', 'VE']:
+  fig = line_graph_school_measure(
+    df_schools_data,
+    school,
+    level=level,
+    measure='gts',
+    start_year=start_year,
+    end_year=end_year,
+    height=600,
+    width=1100,
+    show_targets=False
+  )
 '''

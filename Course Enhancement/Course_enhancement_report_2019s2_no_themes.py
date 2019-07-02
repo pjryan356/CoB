@@ -272,9 +272,7 @@ def qry_course_enhancement_list(year, semester, tbl='vw100_courses', schema='cou
         " FROM ( \n" \
         "   SELECT level, school_code, course_code, course_code_ces, cluster_code  \n" \
         "	  FROM {0}.{1} \n" \
-        "   WHERE year = {2} AND semester = {3} \n" \
-        "       AND cob_selected IS NULL \n" \
-        "       AND la_selected = 'True' \n" \
+        "   WHERE year = {2} AND semester = {3} AND course_code = 'BUSM3229'\n" \
         "   ) ce \n" \
         " LEFT OUTER JOIN ( \n" \
         "   SELECT * FROM lookups.vw_course_details_recent \n" \
@@ -287,7 +285,6 @@ def qry_course_enhancement_list(year, semester, tbl='vw100_courses', schema='cou
 def get_course_enhancement_list(year, semester, cur, tbl='vw100_courses', schema='course_enhancement'):
   # Returns a dataframe of the courses undergoing enhancement course in year, semester from db (cur)
   qry = qry_course_enhancement_list(year, semester, tbl, schema)
-  print(qry)
   return db_extract_query_to_dataframe(qry, cur, print_messages=False)
 
 
@@ -397,20 +394,27 @@ def get_course_program_ces_data(course_list, start_year, end_year, cur, tbl='vw1
 df_ce = get_course_enhancement_list(year, semester,
                                     cur=postgres_cur)
 df_schools = df_ce[['school_code', 'school_name']].drop_duplicates()
+
+print(df_ce)
+print(df_schools)
+
 df_ce_ces = get_course_ces_data(df_ce['course_code_ces'].tolist(),
                                 start_year,
                                 end_year,
                                 cur=postgres_cur)
 
+print(df_ce_ces)
 df_ce_comments = get_course_comments(df_ce['course_code_ces'].tolist(),
                                      comments_year, comments_semester,
                                      cur=postgres_cur)
+
+print(df_ce_comments)
 
 df_ce_prg_ces = get_course_program_ces_data(df_ce['course_code_ces'].tolist(),
                                             start_year,
                                             end_year,
                                             cur=postgres_cur)
-
+print(df_ce_prg_ces)
 
 '''----------------------------- create dash functions -------------------------------------'''
 def create_school_options():

@@ -38,13 +38,15 @@ postgres_con = postgres_engine.connect()
 
 
 # get data from sams
-sams_qry = qry_program_course_structure(program_code=None, active=True)
+sams_qry = qry_program_course_structure(program_code=None, active=False)
 
 try:
   df = pd.read_sql(sql=sams_qry, con=sams_engine)
 except:
   print(sams_qry)
 
+print(sams_qry)
+int('d')
 #print(tabulate.tabulate(df, headers='keys'))
 
 x = postgres_con.execute(qry_delete_after_term(schema='programs',
@@ -64,10 +66,10 @@ df.to_sql(name='tbl_plan_course_structure',
 # Add update statement to table description
 date = dt.datetime.now().date()
 qry_comment = """
-COMMENT ON TABLE lookups.tbl_program_details
+COMMENT ON TABLE {1}.{2}
     IS 'Updated on {0}'
 ;
-""".format(date.strftime('%d-%m-%Y'))
+""".format(date.strftime('%d-%m-%Y'), 'programs', 'tbl_plan_course_structure')
 
 print(qry_comment)
 trans = postgres_con.begin()
