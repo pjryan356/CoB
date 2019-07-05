@@ -19,7 +19,6 @@ from Course_enhancement_graphs import (
   line_graph_program_measure_surveys,
   generate_ces_pd_table,
   line_graph_gtsq_surveys,
-  generate_ces_pd_table,
   graphCourseProgramPie
 )
 

@@ -27,27 +27,29 @@ end_year = 2019
 
 '''--------------------------------- Connect to Database  ----------------------------'''
 # create postgres engine this is the connection to the postgres database
-postgres_pw = input("Postgres Password: ")
-postgres_user = 'pjryan'
-postgres_host = 'localhost'
-postgres_dbname = 'postgres'
+#postgres_pw = input("Postgres Password: ")
+#postgres_user = 'pjryan'
+#postgres_host = 'localhost'
+#postgres_dbname = 'postgres'
 
-con_string = "host='{0}' " \
-             "dbname='{1}' " \
-             "user='{2}' " \
-             "password='{3}' " \
-             "".format(postgres_host, postgres_dbname, postgres_user, postgres_pw)
-postgres_con, postgres_cur = connect_to_postgres_db(con_string)
+#con_string = "host='{0}' " \
+#             "dbname='{1}' " \
+#             "user='{2}' " \
+#             "password='{3}' " \
+#             "".format(postgres_host, postgres_dbname, postgres_user, postgres_pw)
+#postgres_con, postgres_cur = connect_to_postgres_db(con_string)
 
 '''-------------------------------------------- Get Data -------------------------------------'''
-qry = ' SELECT * \n' \
-      ' FROM ces.vw146_school_bus_for_graph \n' \
-      "   WHERE year >= {}" \
-      " ORDER BY school_code, level, year, semester" \
-      "; \n".format(start_year)
+def get_school_data(start_year, postgres_cur):
+  qry = ' SELECT * \n' \
+        ' FROM ces.vw146_school_bus_for_graph \n' \
+        "   WHERE year >= {}" \
+        " ORDER BY school_code, level, year, semester" \
+        "; \n".format(start_year)
 
-df_schools_data = db_extract_query_to_dataframe(qry, postgres_cur, print_messages=False)
-
+  return db_extract_query_to_dataframe(qry, postgres_cur, print_messages=False)
+  
+#df_schools_data = get_school_data(start_year, postgres_cur)
 
 def line_graph_school_measure(df1, school, level='HE', measure='gts',
                               start_year=2015, end_year=2019,
@@ -87,7 +89,7 @@ def line_graph_school_measure(df1, school, level='HE', measure='gts',
   # Create Semester 1 text
   sem1_text = [None for j in range(len(x) - 1)]
   sem1_text.append(df_1.iloc[-1][measure])
-  print(sem1_text)
+  #print(sem1_text)
   
   # Create Semester 1 trace (solid)
   trace_sem1 = go.Scatter(
@@ -209,25 +211,54 @@ def line_trace_school_measure(df1,
                               measure='gts',
                               start_year=2014, end_year=2018,
                               semester=None,
-                              dash_type=None):
+                              dash_type=None,
+                              line_color=None,
+                              df_cob=None):
   df_school = df1.loc[df1['school_name_short'] == school]
-  df_school = df_school.loc[df_school['level'] == level]
+  if level != 'All':
+    df_school = df_school.loc[df_school['level'] == level]
+  else:
+    df_school = df_school.loc[df_school['level'] == 'NA']
+  
+  #print(tabulate(df_school, headers='keys'))
   
   if semester == 1:
     df_sem = df_school.loc[df1['semester'] == 1]
   elif semester == 2:
     df_sem = df_school.loc[df1['semester'] == 2]
+  #print(tabulate(df_sem, headers='keys'))
   
   x = [i - 0.5 for i in range(1, int(end_year) - int(start_year) + 2)]
   
-  colour = df_sem.iloc[0]['colour_html']
+  if line_color != None:
+    colour = line_color
+  else:
+    try: colour = df_sem.iloc[0]['colour_html']
+    except: pass
   
-  print(school, colour)
+  print(len(df_sem))
+  
+  if len(df_sem) == 0 and school == 'CoB':
+    colour = rc.RMIT_Black
+    if semester == 1:
+      df_sem = df_cob.loc[df_cob['semester'] == 1]
+    elif semester == 2:
+      df_sem = df_cob.loc[df_cob['semester'] == 2]
+    
+    print(df_sem)
+    
+  if school in ['VBE', 'CoB']:
+    name = '<span style="color: {0}">{1} ({2})</span>'.format(colour, school, level)
+  else:
+    name = '<span style="color: {0}">{1}</span>'.format(colour, school)
+
+  print(school, colour, name)
+  
   # Create Semester trace (solid)
   trace = go.Scatter(
     x=x,
     y=df_sem[measure].tolist(),
-    name='<span style="color: {2}">{0} ({1})   </span>'.format(school, level, colour),
+    name=name,
     text=None,
     textfont={'size': 14,
               'color': colour},
@@ -252,10 +283,11 @@ def create_school_RMIT_graph(
   measure='gts',
   start_year=2015, end_year=2018,
   semester=1,
-  folder='H:\\Projects\\CoB\\CES\\School Reporting\\2018 S2\\',
   height=600,
   width=1100,
-  background='#000000'):
+  background='#000000',
+  df_cob=None):
+  
   if background == '#000000':
     line_col = '#FFFFFF'
   else:
@@ -265,15 +297,15 @@ def create_school_RMIT_graph(
   x = [i + 0.5 for i in range(0, (int(end_year) - int(start_year) + 1))]
   xlabels = ['{}'.format(i) for i in range(int(start_year), int(end_year) + 1)]
   
-  graph_title = '<b>CES (Semester {1}):</b> CoB {0} by School'.format(measure.upper(), semester)
-  
   for school in [['ACCT', 'HE'],
                  ['BITL', 'HE'],
                  ['EFM', 'HE'],
                  ['GSBL', 'HE'],
                  ['MGT', 'HE'],
                  ['VBE', 'HE'],
-                 ['VBE', 'VE']]:
+                 ['VBE', 'VE'],
+                 ['CoB', 'HE'],
+                 ]:
     
     if school[1] == 'VE':
       dash_type = 'dot'
@@ -284,25 +316,26 @@ def create_school_RMIT_graph(
       df1,
       school[0],
       level=school[1],
-      measure='gts',
+      measure=measure,
       start_year=start_year, end_year=end_year,
       semester=semester,
-      dash_type=dash_type))
+      dash_type=dash_type,
+      df_cob=df_cob))
   
   fig = go.Figure(
     data=traces,
     layout=go.Layout(
-      title=graph_title,
-      titlefont={'size': 16, },
-      showlegend=True,
+      title=False,
+      showlegend=False,
       legend=dict(
-        font=dict(size=12),
+        font=dict(size=10),
         orientation="h",
         bgcolor=background
       ),
       paper_bgcolor=background,
       plot_bgcolor=background,
       xaxis=dict(
+        title=False,
         range=[0, int(end_year) - int(start_year) + 1],
         tickvals=x,
         tickfont={'size': 12},
@@ -317,7 +350,6 @@ def create_school_RMIT_graph(
       ),
       yaxis=dict(
         title='Percent Agree',
-        titlefont={'size': 14},
         range=[68, 88],
         tickvals=[70, 72.5, 75, 77.5, 80, 82.5, 85, 87.5],
         ticktext=[70, '', 75, '', 80, '', 85, ''],
@@ -331,27 +363,130 @@ def create_school_RMIT_graph(
       width=width,
       height=height,
       hovermode='closest',
-      margin=dict(b=40, l=60, r=5, t=40),
+      margin=dict(b=25, l=60, r=10, t=20),
       hidesources=True,
     )
   )
-  filename = folder + 'CoB_schools_{}_{}S{}'.format(measure, end_year, semester)
+  return fig
+
+
+def create_CoB_graph(
+  df1,
+  measure='gts',
+  start_year=2015, end_year=2018,
+  semester=1,
+  height=600,
+  width=1100,
+  background='#000000'):
+  
+  if background == '#000000':
+    line_col = '#FFFFFF'
+  else:
+    line_col = None
+  
+  traces = []
+  x = [i + 0.5 for i in range(0, (int(end_year) - int(start_year) + 1))]
+  xlabels = ['{}'.format(i) for i in range(int(start_year), int(end_year) + 1)]
+  
+  for school in [
+                 ['CoB', 'HE'],
+                 ['CoB', 'VE'],
+                 ['CoB', 'All'],
+                 ]:
+    
+    if school[1] == 'All':
+      color=rc.RMIT_Red
+    else:
+      color=None
+    
+    if school[1] == 'VE':
+      dash_type = 'dot'
+    else:
+      dash_type = None
+    
+    print(school, color)
+    
+    traces.append(line_trace_school_measure(
+      df1,
+      school[0],
+      level=school[1],
+      measure=measure,
+      start_year=start_year, end_year=end_year,
+      semester=semester,
+      dash_type=dash_type,
+      line_color=color)
+    )
+  
+  fig = go.Figure(
+    data=traces,
+    layout=go.Layout(
+      title='CoB CES {} (Semester 1)'.format(measure.upper()),
+      showlegend=True,
+      legend=dict(
+        font=dict(size=10),
+        orientation="h",
+        bgcolor=background
+      ),
+      paper_bgcolor=background,
+      plot_bgcolor=background,
+      xaxis=dict(
+        title=False,
+        range=[0, int(end_year) - int(start_year) + 1],
+        tickvals=x,
+        tickfont={'size': 12},
+        showgrid=False,
+        ticktext=xlabels,
+        ticks='outside',
+        tick0=1,
+        dtick=1,
+        ticklen=5,
+        zeroline=True,
+        zerolinewidth=2,
+      ),
+      yaxis=dict(
+        title='Percent Agree',
+        range=[68, 88],
+        tickvals=[70, 72.5, 75, 77.5, 80, 82.5, 85, 87.5],
+        ticktext=[70, '', 75, '', 80, '', 85, ''],
+        ticklen=5,
+        tickfont={'size': 12},
+        zeroline=True,
+        zerolinewidth=2,
+        gridcolor=line_col,
+        layer="below traces",
+      ),
+      width=width,
+      height=height,
+      hovermode='closest',
+      margin=dict(b=25, l=60, r=10, t=40),
+      hidesources=True,
+    )
+  )
+
+  filename = 'H:\\Projects\\CoB\\CES\\School Reporting\\2019 S1\\' + 'CoB_{}_2019S1'.format(measure)
   plotly.offline.plot(fig, filename + '.html')
   py.image.save_as(fig, filename + '.png')
   return fig
 
 
-print(tabulate(df_schools_data, headers='keys'))
+#print(tabulate(df_schools_data, headers='keys'))
+measure='osi'
+semester=2
+graph_title = '<b>CES (Semester {1}):</b> CoB {0} by School'.format(measure.upper(), semester)
+
+
+
 '''
 fig = create_school_RMIT_graph(
   df1=df_schools_data,
-  measure='osi',
+  measure=measure,
   start_year=2015, end_year=2018,
-  semester=2,
+  semester=semester,
   folder='H:\\Projects\\CoB\\CES\\School Reporting\\2018 S2\\',
   height=400,
   width=800,
-  background='#FFFFFF')
+  background='#FFFFFF',
+  graph_title=graph_title)
 
 
 
