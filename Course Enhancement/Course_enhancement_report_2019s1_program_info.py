@@ -33,6 +33,10 @@ from general.db_helper_functions import (
   db_extract_query_to_dataframe
 )
 
+from general.postgres_queries import (
+  qry_course_enhancement_list
+)
+
 '''
 This script is designed to produce the Course Enhancement Data Packs.
   On running it produces a weblink with two dropdown menus
@@ -261,27 +265,9 @@ def make_comments_rows(df1, empty_statement='No comments provided'):
 
 '''----------------------------- create data extraction functions -------------------------------------'''
 
-
-def get_course_enhancement_list(year, semester, cur, tbl='vw100_courses', schema='course_enhancement'):
+def get_course_enhancement_list(year, semester, cur, schema='course_enhancement'):
   # Returns a dataframe of the courses undergoing enhancement course in year, semester from db (cur)
-  qry = " SELECT DISTINCT \n" \
-        "   ce.level, ce.school_code, ce.course_code, \n" \
-        "   ce.course_code_ces, \n" \
-        "   ce.cluster_code, \n" \
-        "   cd.school_name, cd.course_name \n" \
-        " FROM ( \n" \
-        "   SELECT level, school_code, course_code, course_code_ces, cluster_code  \n" \
-        "	  FROM {0}.{1} \n" \
-        "   WHERE year = {2} AND semester = {3} \n" \
-        "       AND cob_selected IS NOT False \n" \
-        "   ) ce \n" \
-        " LEFT OUTER JOIN ( \n" \
-        "   SELECT * FROM lookups.vw_course_details_recent \n" \
-        "   ) cd ON (SPLIT_PART(cd.course_code,'-', 1) = SPLIT_PART(ce.course_code,'-', 1))\n" \
-        " ORDER BY ce.school_code, ce.course_code \n" \
-        "".format(schema, tbl,
-                  year, semester)
-  
+  qry = qry_course_enhancement_list(year, semester, 'vw100_courses', schema)
   return db_extract_query_to_dataframe(qry, cur, print_messages=False)
 
 
@@ -335,7 +321,7 @@ def get_course_comments(course_list, year, semester, cur, tbl='vw202_course_comm
              year, semester,
              list_to_text(course_list),
              year, semester)
-  return db_extract_query_to_dataframe(qry, cur, print_messages=True)
+  return db_extract_query_to_dataframe(qry, cur, print_messages=False)
 
 
 def get_course_comments_themes(course_list, year, semester, cur, tbl='vw301_course_thematic', schema='ces'):
@@ -622,6 +608,11 @@ def make_course_pack(course_code_ces):
   df1_comments = get_course_data(df_ce_comments, course_code_ces)
   df1_themes = get_course_data(df_ce_comment_themes, course_code_ces)
   df1_prg_ces = get_course_data(df_ce_prg_ces, course_code_ces)
+  
+  print(tabulate(df1_ce, headers='keys'))
+  print(tabulate(df1_ces, headers='keys'))
+  print(tabulate(df1_comments, headers='keys'))
+  print(tabulate(df1_prg_ces, headers='keys'))
   
   # get top 5 programs in most recent semester
   df1_enrl = df1_prg_ces.loc[(df1_prg_ces['year'] == end_year) &

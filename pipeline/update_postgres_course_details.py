@@ -1,4 +1,4 @@
-## Update script to upload course detials table in local db
+## Update script to upload course details table in local db
 # Peter Ryan Nov 2018
 
 import datetime as dt

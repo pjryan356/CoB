@@ -53,126 +53,7 @@ qry = ' SELECT * \n' \
  
 df_college = db_extract_query_to_dataframe(qry, postgres_cur, print_messages=False)
 
-print(tabulate(df_college, headers='keys'))
-
-
-def line_graph_college_measure(df1, college_name_short, measure='gts',
-                              start_year=2015, end_year=2018,
-                              height=400,
-                              width=800):
-  df_1 = df1.loc[(df1['semester'] == 1) & (df1['college_name_short'] == college_name_short)]
-  df_2 = df1.loc[(df1['semester'] == 2) & (df1['college_name_short'] == college_name_short)]
-  
-  # all traces for plotly
-  traces = []
-  xlabels = []
-  
-  for year in range(int(start_year), int(end_year) + 1):
-    xlabels.append('{}<br>'.format(year))
-  
-  no_terms = len(xlabels)
-  
-  x = [i - 0.5 for i in range(1, no_terms + 1)]
-  
-  label_check = 0
-
-  graph_title = '<b>{1}:</b> CES College {0}'.format(measure.upper(), college_name_short)
-  
-  data_label = []
-  y = []
-  label_check += 1
-  
-  # Create Semester 1 text
-  sem1_text = [None for j in range(len(x)-1)]
-  sem1_text.append(df_1.iloc[-1][measure])
-  print(sem1_text)
-  
-  # Create Semester 1 trace (solid)
-  trace_sem1 = go.Scatter(
-    x=x,
-    y=df_1[measure].tolist(),
-    name='Semester 1  ',
-    text=None,
-    textfont={'size': 14,
-              'color': df_1.iloc[0]['colour_html']},
-    line=go.Line(width=2,
-                 color=df_1.iloc[0]['colour_html'],
-                 dash=sem1_text,),
-    marker=go.Marker(
-      color=df_1.iloc[0]['colour_html'],
-      size=8,
-      symbol='cirle'
-    ),
-    connectgaps=False,
-    mode='lines+markers',
-    showlegend=True,
-    textposition='bottom right'
-  )
-  traces.append(trace_sem1)
-  
-  #Create Semester 2 trace (dashed)
-  trace_sem2 = go.Scatter(
-    x=x,
-    y=df_2[measure].tolist(),
-    name='Semester 2  ',
-    text=None,
-    line=go.Line(width=2,
-                 color=df_2.iloc[0]['colour_html'],
-                 dash='dot',),
-    marker=go.Marker(
-      color=df_2.iloc[0]['colour_html'],
-      size=8,
-      symbol='diamond'
-    ),
-    connectgaps=False,
-    mode='lines+markers',
-    showlegend=True,
-    textposition='top center'
-  )
-  traces.append(trace_sem2)
-  
-  fig = {'data': traces,
-         'layout': go.Layout(
-           title=graph_title,
-           titlefont={'size': 20,},
-           showlegend=True,
-           legend=dict(
-             font=dict(size=14),
-             orientation="h",
-           ),
-           xaxis=dict(
-             range=[0, no_terms],
-             tickvals=x,
-             tickfont={'size': 16},
-             showgrid=False,
-             ticktext=xlabels,
-             ticks='outside',
-             tick0=1,
-             dtick=1,
-             ticklen=5,
-             zeroline=True,
-             zerolinewidth=2,
-           ),
-           yaxis=dict(
-             title='Percent Agree',
-             titlefont={'size': 18},
-             range=[59, 91],
-             ticklen=5,
-             tickfont={'size': 16},
-             zeroline=True,
-             zerolinewidth=2,
-           ),
-           width=width,
-           height=height,
-           hovermode='closest',
-           margin=dict(b=40, l=60, r=5, t=40),
-           hidesources=True,
-         )
-         }
-  filename = folder + '{}_{}_2018'.format(df_2.iloc[0]['college_name_short'], measure)
-  plotly.offline.plot(fig, filename+'.html')
-  py.image.save_as(fig, filename+'.png')
-  return fig
+#print(tabulate(df_college, headers='keys'))
 
 
 def line_graph_colleges_measure(df1, level, measure='gts',
@@ -187,7 +68,6 @@ def line_graph_colleges_measure(df1, level, measure='gts',
   yticks = [68, 72, 76, 80, 84, 88]
   ytitle = 'Percent Agree'
   
-  
   if 'mean' in measure:
     yrange = [3.7, 4.5]
     yticks = [3.8, 4.0, 4.2, 4.4]
@@ -195,9 +75,12 @@ def line_graph_colleges_measure(df1, level, measure='gts',
       ytitle = 'Mean GTS (0-5)'
     if 'osi' in measure:
       ytitle = 'Mean OSI (0-5)'
-    
+
+
   for year in range(int(start_year), int(end_year) + 1):
     xlabels.append('{}<br>'.format(year))
+
+  no_terms = len(xlabels)
   
   no_terms = len(xlabels)
   
@@ -214,7 +97,17 @@ def line_graph_colleges_measure(df1, level, measure='gts',
   for college_name_short in ['CoB', 'DSC', 'SEH']:
     df_1 = df1.loc[(df1['semester'] == 1) & (df1['college_name_short'] == college_name_short)]
     df_2 = df1.loc[(df1['semester'] == 2) & (df1['college_name_short'] == college_name_short)]
-  
+
+    # maker size bases on population
+    size_1 = []
+    size_2 = []
+    for i, r in df_1.iterrows():
+      size_1.append(r['population']/1000)
+    for i, r in df_2.iterrows():
+      size_2.append(r['population']/1000)
+
+    no_terms = len(xlabels)
+    
     # Create Semester 1 trace (solid)
     trace_sem1 = go.Scatter(
       x=x,
@@ -228,10 +121,10 @@ def line_graph_colleges_measure(df1, level, measure='gts',
                    ),
       marker=go.Marker(
         color=df_1.iloc[0]['colour_html'],
-        size=8,
+        size=size_1,
         symbol='cirle'
       ),
-      connectgaps=False,
+      connectgaps=True,
       mode='lines+markers',
       showlegend=True,
       textposition='bottom right'
@@ -249,10 +142,10 @@ def line_graph_colleges_measure(df1, level, measure='gts',
                    dash='dot', ),
       marker=go.Marker(
         color=df_2.iloc[0]['colour_html'],
-        size=8,
+        size=size_2,
         symbol='diamond'
       ),
-      connectgaps=False,
+      connectgaps=True,
       mode='lines+markers',
       showlegend=True,
       textposition='top center'
@@ -302,19 +195,13 @@ def line_graph_colleges_measure(df1, level, measure='gts',
   plotly.offline.plot(fig, filename + '.html')
   py.image.save_as(fig, filename + '.png')
   return fig
-fig = line_graph_colleges_measure(
-                df_college,
-                acad_career,
-                measure='gts_mean',
-                start_year=start_year, end_year=end_year,
-                height=600,
-                width=1100)
 
 
-fig = line_graph_colleges_measure(
-                df_college,
-                acad_career,
-                measure='osi_mean',
-                start_year=start_year, end_year=end_year,
-                height=600,
-                width=1100)
+for m in ['gts', 'osi', 'gts_mean', 'osi_mean']:
+  fig = line_graph_colleges_measure(
+                  df_college,
+                  acad_career,
+                  measure=m,
+                  start_year=start_year, end_year=end_year,
+                  height=600,
+                  width=1100)

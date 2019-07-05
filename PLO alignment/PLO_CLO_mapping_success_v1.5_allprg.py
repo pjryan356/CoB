@@ -45,11 +45,18 @@ def adjust_excel_rows(ws, skip_rows=0, max_rows=False, default_col='A', default_
       ws.row_dimensions[i_row + 1].height = new_height
 
 
+def find_first_empty_row(ws, column):
+  for cell in ws[column]:
+    if cell.value is None:
+      break
+
+  return cell.row
+    
 # open template
 directory = 'H:\\Projects\\CoB\\Program Transformation\\CLO mapping\\Success\\'
-plo_clo_filename = 'PLOs_CLOs_manually_editted_success_UGRD.xlsx'
+plo_clo_filename = 'PLOs_CLOs_manually_editted_success.xlsx'
 
-template = 'PLO_CLO_alignment_template_success_v1.4.xlsx'
+template = 'Done3\\PLO_CLO_alignment_all_Feb2019_temp - Copy.xlsx'
 
 # Get Dataframes
 df_plo = pd.read_excel(directory+plo_clo_filename, sheet_name='PLOs')
@@ -60,17 +67,63 @@ df_mapping = pd.read_excel(directory+plo_clo_filename, sheet_name='Mapping', con
 df_programs = df_mapping[['program_code', 'plan_code', 'career', 'school_code',
                           'school_abbr', 'campus', 'program_name']].drop_duplicates()
 
-# Create a data-validation object with list validation
-dv = DataValidation(type="list", formula1='"0,1"', allow_blank=True)
+# Matching column data validation
+dv_match = DataValidation(type="list", formula1='"0,1"', allow_blank=True)
 
 # Optionally set a custom error message
-dv.error ='Your entry is not in the list'
-dv.errorTitle = 'Invalid Entry'
+dv_match.error ='Your entry is not in the list'
+dv_match.errorTitle = 'Invalid Entry'
 # Optionally set a custom prompt message
-dv.prompt = 'Please select from the list'
-dv.promptTitle = 'List Selection'
+dv_match.prompt = 'Please select from the list'
+dv_match.promptTitle = 'List Selection'
 
 
+# General column data validation
+dv_general = DataValidation(type="list", formula1='selections!$A$2:$A$7', allow_blank=True)
+
+# Optionally set a custom error message
+dv_general.error ='You have entered free text'
+dv_general.errorTitle = 'Free Text'
+dv_general.errorType = 'warning'
+
+# Active Verb column data validation
+dv_active = DataValidation(type="list", formula1='selections!$B$2:$B$6', allow_blank=True)
+
+# Optionally set a custom error message
+dv_active.error ='You have entered free text'
+dv_active.errorTitle = 'Free Text'
+dv_active.errorType = 'warning'
+
+# Focus column data validation
+dv_focus = DataValidation(type="list", formula1='selections!$C$2:$C$6', allow_blank=True)
+
+# Optionally set a custom error message
+dv_focus.error ='You have entered free text'
+dv_focus.errorTitle = 'Free Text'
+dv_focus.errorType = 'warning'
+
+# Context column data validation
+dv_context = DataValidation(type="list", formula1='selections!$D$2:$D$7', allow_blank=True)
+
+# Optionally set a custom error message
+dv_context.error ='You have entered free text'
+dv_context.errorTitle = 'Free Text'
+dv_context.errorType = 'warning'
+
+# Clear column data validation
+dv_clear = DataValidation(type="list", formula1='selections!$E$2:$E$5', allow_blank=True)
+
+# Optionally set a custom error message
+dv_clear.error ='You have entered free text'
+dv_clear.errorTitle = 'Free Text'
+dv_clear.errorType = 'warning'
+
+
+#initiate counters
+j_plo = 2
+j_mapping = 2
+j_clo = 2
+j_align = 2
 
 # iterate through programs
 for i_prg, prg in df_programs.iterrows():
@@ -93,9 +146,7 @@ for i_prg, prg in df_programs.iterrows():
     (df_mapping['program_code'] == prg['program_code']) & (df_mapping['plan_code'] == prg['plan_code'])]
   df_prg_courses = df_prg_mapping[['course_id', 'course_code', 'course_name']].drop_duplicates()
   
-  
   # Update PLO sheet & All course summaries
-  j_plo = 2
   for i, r in df_prg_plos.iterrows():
     ws_plo.cell(row=j_plo, column=1).value = prg['program_code']
     ws_plo.cell(row=j_plo, column=2).value = prg['plan_code']
@@ -106,9 +157,18 @@ for i_prg, prg in df_programs.iterrows():
     ws_plo.cell(row=j_plo, column=7).value = r['plo_nbr']
     ws_plo.cell(row=j_plo, column=8).alignment = Alignment(wrapText=True)
     ws_plo.cell(row=j_plo, column=8).value = r['plo_text']
-    ws_plo.cell(row=j_plo, column=9).value = r['status']
-    ws_plo.cell(row=j_plo, column=10).value = r['updated']
-
+    #ws_plo.cell(row=j_plo, column=9).value = r['status']
+    #ws_plo.cell(row=j_plo, column=10).value = r['updated']
+    dv_general.add(ws_plo.cell(row=j_plo, column=9))
+    dv_general.add(ws_plo.cell(row=j_plo, column=10))
+    dv_active.add(ws_plo.cell(row=j_plo, column=11))
+    dv_active.add(ws_plo.cell(row=j_plo, column=12))
+    dv_focus.add(ws_plo.cell(row=j_plo, column=13))
+    dv_focus.add(ws_plo.cell(row=j_plo, column=14))
+    dv_context.add(ws_plo.cell(row=j_plo, column=15))
+    dv_context.add(ws_plo.cell(row=j_plo, column=16))
+    dv_clear.add(ws_plo.cell(row=j_plo, column=17))
+    
     ws_all_courses.cell(row=1, column=j_plo+3).alignment = Alignment(wrapText=True)
     ws_all_courses.cell(row=1, column=j_plo+3).value = r['plo_nbr']
     ws_all_courses.cell(row=1, column=j_plo+3).fill = ploFill
@@ -118,7 +178,6 @@ for i_prg, prg in df_programs.iterrows():
     j_plo += 1
     
   # Update mapping sheet
-  j_mapping = 2
   for i, r in df_prg_mapping.iterrows():
     df_prg_crse_clos = df_clo.loc[(df_clo['course_id'] == r['course_id'])]
     ws_mapping.cell(row=j_mapping, column=1).value = prg['program_code']
@@ -132,7 +191,6 @@ for i_prg, prg in df_programs.iterrows():
     j_mapping += 1
 
   # Update CLOs sheet & All course summaries
-  j_clo = 2
   for i_crse, crse in df_prg_courses.iterrows():
     df_prg_crse_clos = df_clo.loc[(df_clo['course_id'] == crse['course_id'])]
 
@@ -145,10 +203,20 @@ for i_prg, prg in df_programs.iterrows():
       ws_clo.cell(row=j_clo, column=6).value = clo['clo_nbr']
       ws_clo.cell(row=j_clo, column=7).alignment = Alignment(wrapText=True)
       ws_clo.cell(row=j_clo, column=7).value = clo['clo_text']
-      ws_clo.cell(row=j_clo, column=8).value = clo['version']
-      ws_clo.cell(row=j_clo, column=9).value = clo['status']
-      ws_clo.cell(row=j_clo, column=10).value = clo['published']
+      #ws_clo.cell(row=j_clo, column=8).value = clo['version']
+      #ws_clo.cell(row=j_clo, column=9).value = clo['status']
+      #ws_clo.cell(row=j_clo, column=10).value = clo['published']
+      dv_general.add(ws_clo.cell(row=j_clo, column=8))
+      dv_general.add(ws_clo.cell(row=j_clo, column=9))
+      dv_active.add(ws_clo.cell(row=j_clo, column=10))
+      dv_active.add(ws_clo.cell(row=j_clo, column=11))
+      dv_focus.add(ws_clo.cell(row=j_clo, column=12))
+      dv_focus.add(ws_clo.cell(row=j_clo, column=13))
+      dv_context.add(ws_clo.cell(row=j_clo, column=14))
+      dv_context.add(ws_clo.cell(row=j_clo, column=15))
+      dv_clear.add(ws_clo.cell(row=j_clo, column=16))
       
+      '''
       # Update all course summary as well
       ws_all_courses.cell(row=j_clo+1, column=1).value = crse['course_code']
       ws_all_courses.cell(row=j_clo+1, column=1).fill = cloFill
@@ -157,30 +225,31 @@ for i_prg, prg in df_programs.iterrows():
       ws_all_courses.cell(row=j_clo+1, column=3).alignment = Alignment(wrapText=True)
       ws_all_courses.cell(row=j_clo+1, column=3).value = clo['clo_text']
       ws_all_courses.cell(row=j_clo+1, column=3).fill = cloFill
-      ws_all_courses.cell(row=j_clo+1, column=4).value = clo['published']
-      ws_all_courses.cell(row=j_clo+1, column=4).fill = dateFill
+      #ws_all_courses.cell(row=j_clo+1, column=4).value = clo['published']
+      #ws_all_courses.cell(row=j_clo+1, column=4).fill = dateFill
+      '''
       j_clo += 1
 
   # Update CLO & PLOS to CLOs sheets
   # For each plo iterate through all clos
-  j_align = 2
-
   for i_plo, plo in df_prg_plos.iterrows():
     for i_crse, crse in df_prg_courses.iterrows():
       df_prg_crse_clos = df_clo.loc[(df_clo['course_id'] == crse['course_id'])]
       for i, clo in df_prg_crse_clos.iterrows():
+        
         ws_align.cell(row=j_align, column=1).value = plo['plo_nbr']
         ws_align.cell(row=j_align, column=2).value = clo['clo_nbr']
-        ws_align.cell(row=j_align, column=3).value = crse['course_code']
-        ws_align.cell(row=j_align, column=4).alignment = Alignment(wrapText=True)
-        ws_align.cell(row=j_align, column=4).value = plo['plo_text']
+        ws_align.cell(row=j_align, column=3).value = plo['program_code']
+        ws_align.cell(row=j_align, column=4).value = crse['course_code']
         ws_align.cell(row=j_align, column=5).alignment = Alignment(wrapText=True)
-        ws_align.cell(row=j_align, column=5).value = clo['clo_text']
-        ws_align.cell(row=j_align, column=6).protection = Protection(locked=False)
-        dv.add(ws_align.cell(row=j_align, column=6))
+        ws_align.cell(row=j_align, column=5).value = plo['plo_text']
+        ws_align.cell(row=j_align, column=6).alignment = Alignment(wrapText=True)
+        ws_align.cell(row=j_align, column=6).value = clo['clo_text']
+        ws_align.cell(row=j_align, column=9).protection = Protection(locked=False)
+        dv.add(ws_align.cell(row=j_align, column=9))
         j_align += 1
 
-  
+  '''
   # Adjust row heights and column widths
   ws = wb["Program Summary"]
   ws.column_dimensions['B'].width = 60
@@ -194,7 +263,7 @@ for i_prg, prg in df_programs.iterrows():
         # Wrap column B
         if j_col + 1 == 2:
           cell.alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
-
+  '''
 
   ws = wb["PLOs"]
   ws.column_dimensions['H'].width = 80
@@ -205,17 +274,17 @@ for i_prg, prg in df_programs.iterrows():
   adjust_excel_rows(ws, skip_rows=1, default_col='G', default_height=15)
   
   ws = wb["PLOs_to_CLOs"]
-  ws.column_dimensions['D'].width = 80
   ws.column_dimensions['E'].width = 80
-  adjust_excel_rows(ws, skip_rows=1, default_col='D', default_height=16)
+  ws.column_dimensions['F'].width = 80
+  adjust_excel_rows(ws, skip_rows=1, default_col='E', default_height=16)
   
+  '''
   # Alter column and row dimensions in All courses
   ws_all_courses.row_dimensions[2].height = 200
   for col in ['E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q']:
     ws_all_courses.column_dimensions[col].width = 16
   
   adjust_excel_rows(ws_all_courses, skip_rows=2, default_col='C', default_height=15)
-  
   
   # Delete unnecessary rows from All courses
   row_no = 3
@@ -243,14 +312,14 @@ for i_prg, prg in df_programs.iterrows():
       ws_course.delete_rows(i_row)
 
     ws_course.protection.set_password('{}'.format(prg['program_code']))
-  
+  '''
   # Lock sheets
-  for sheet in ['PLOs', 'CLOs', 'Program_course_mapping', 'PLOs_to_CLOs',
-                'Program Summary', 'All Course Summaries']:
-    ws = wb[sheet]
-    ws.protection.set_password('{}'.format(prg['program_code']))
+  #for sheet in ['PLOs', 'CLOs', 'Program_course_mapping', 'PLOs_to_CLOs',
+  #              'Program Summary', 'All Course Summaries']:
+    #ws = wb[sheet]
+    #ws.protection.set_password('{}'.format(prg['program_code']))
     
-  save_filename = 'UGRD\\PLO_CLO_alignment_{}_{}_24Apr2019.xlsx'.format(prg['school_abbr'], prg['program_code'])
+  save_filename = 'Done3\\PLO_CLO_alignment_all_Feb2019_temp - Copy.xlsx'
   wb.save(directory+save_filename)
   
   print('{}\tTime:{}\t{}'.format(prg['program_code'], datetime.now().strftime('%H:%M:%S'), datetime.now() - startTime))

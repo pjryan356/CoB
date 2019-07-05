@@ -254,3 +254,103 @@ LEFT OUTER JOIN (
 WHERE  prg1.acad_group IN ('SET', 'TRAIN', 'RMITU', 'DSC', 'SEH', 'RMITV', 'BUS')
   '''
   return qry
+
+def qry_program_course_structure(program_code=None, active=True):
+  qry = """
+      SELECT
+        prg.acad_prog AS program_code,
+        prg.acad_plan AS plan_code,
+        prg.effdt,
+        prg.program_name,
+        prg.acad_career AS program_level,
+        prg.acad_org AS program_school_code,
+        CASE
+            WHEN prg.campus = 'VNMRI' THEN 'SBM'
+            WHEN prg.acad_org = '610P' THEN 'CPO'
+            WHEN prg.acad_org = '615H' THEN 'ACCT'
+            WHEN prg.acad_org = '620H' THEN 'BITL'
+            WHEN prg.acad_org = '625H' THEN 'EFM'
+            WHEN prg.acad_org = '630H' THEN 'MGT'
+            WHEN prg.acad_org = '650T' THEN 'VBE'
+            WHEN prg.acad_org = '660H' THEN 'GSBL'
+            ELSE 'UNK'
+            END AS school_abbr,
+        prg.acad_group AS program_college,
+        prg.campus,
+        prg_crse.crse_id,
+        prg_crse.course_code,
+        prg_crse.course_name,
+        prg_crse.ams_block_nbr,
+        clist_hdr.clist_name
+      FROM (
+        SELECT
+          t1.acad_prog,
+          t1.acad_plan,
+          t1.acad_career,
+          t1.acad_org,
+          t1.acad_group,
+          t1.campus,
+          t1.descr AS program_name,
+          t1.effdt
+        FROM PS_ACAD_PROG_TBL t1
+        WHERE t1.EFF_STATUS = 'A'
+          AND acad_group = 'BUS'
+  """
+  if program_code != None:
+    qry += " AND acad_prog = '{0}' \n".format(program_code)
+  
+  elif active == True:
+    qry += """
+    AND acad_prog
+      IN(
+        'AD010', 'AD015', 'BH064', 'BP027', 'BP030', 'BP129', 'BP134', 'BP135', 'BP138', 'BP141', 'BP143', 'BP217',
+        'BP251',
+        'BP252', 'BP253', 'BP254', 'BP255', 'BP276', 'BP308', 'BP313', 'BP314', 'BP324', 'DP003',
+        'MC161', 'MC162', 'MC192', 'MC194', 'MC196', 'MC197', 'MC198', 'MC199', 'MC200', 'MC201', 'MC205', 'MC260',
+        'MC263',
+        'GC104', 'GC053', 'GC161',
+        'OUA04', 'OUA05', 'OUA07', 'OUA14', 'OUA28', 'OUA29', 'OUA31', 'OUA35',
+        'DR200', 'DR201', 'DR202', 'DR203', 'DR204', 'DR205', 'DR206', 'MR200', 'MR201', 'MR202', 'MR203', 'MR204',
+        'MR205')
+    """
+  qry += """
+          AND t1.EFFDT = (
+            SELECT max(EFFDT)
+            FROM  PS_ACAD_PROG_TBL t2
+            WHERE t2.EFF_STATUS = 'A'
+              AND t2.acad_prog = t1.acad_prog
+              AND t2.acad_career = t1.acad_career
+              AND t2.campus = t1.campus
+              AND t1.campus != ' ')
+          AND t1.campus != ' '
+        ) prg
+
+      LEFT OUTER JOIN (
+        SELECT
+          acad_prog,
+          acad_plan,
+          crse_career,
+          campus,
+          course_list,
+          descr1 AS plan_name,
+          descr254 AS explaination,
+          ams_block_nbr,
+          r_course_sequence,
+          descr254A AS explaination2,
+          ams_descr254A AS explaination3,
+          crse_id,
+          SUBJECT || catalog_nbr AS course_code,
+          ams_descr254 AS course_name
+        FROM PS_AMS_SIM_PRG_STR
+        ) prg_crse ON (prg.acad_prog = prg_crse.acad_prog AND prg.acad_plan = prg_crse.acad_plan AND prg.acad_career=prg_crse.crse_career AND prg.campus = prg_crse.campus)
+
+      LEFT OUTER JOIN (
+        SELECT DISTINCT course_list, descr254A AS clist_name, descr AS clist_namelong, descrshort AS clist_nameshort, acad_prog, acad_plan, acad_career
+        FROM PS_CLST_MAIN_TBL t2
+        WHERE t2.EFF_STATUS = 'A'
+          AND t2.EFFDT = (SELECT max(EFFDT) FROM PS_CLST_MAIN_TBL maxdt WHERE maxdt.course_list = t2.course_list AND maxdt.acad_prog = t2.acad_prog AND maxdt.EFF_STATUS = 'A' AND maxdt.acad_plan = t2.acad_plan AND maxdt.acad_career = t2.acad_career)
+        ) clist_hdr ON (clist_hdr.acad_prog=prg.acad_prog AND clist_hdr.acad_plan = prg.acad_plan AND clist_hdr.acad_career = prg.acad_career AND clist_hdr.course_list = prg_crse.course_list )
+
+      ORDER BY prg.acad_prog, ams_block_nbr, clist_name, r_course_sequence, course_code
+      """
+  return qry

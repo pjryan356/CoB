@@ -14,9 +14,6 @@ import general.RMIT_colours as rc
 from general.sams_queries import *
 from general.sams_helper_functions import *
 from general.postgres_queries import (
-  qry_create_table_course_location,
-  qry_add_comment,
-  qry_drop_table,
   qry_delete_after_term)
 
 # Get inputs
@@ -42,6 +39,7 @@ postgres_con = postgres_engine.connect()
 
 # get data from sams
 sams_qry = qry_program_details()
+print(sams_qry)
 
 try:
   df = pd.read_sql(sql=sams_qry, con=sams_engine)
@@ -63,6 +61,8 @@ df.to_sql(name='tbl_program_details',
           if_exists='append',
           index=False
           )
+
+print(tabulate.tabulate(df.iloc[:10], headers='keys'))
 
 # Add update statement to table description
 date = dt.datetime.now().date()

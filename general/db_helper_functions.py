@@ -52,9 +52,9 @@ def db_extract_query_to_dataframe(sql_query, cur, print_messages=False):
     # pass SQL result to dataframe named 'df'
     df = pd.DataFrame(cur.fetchall())
     df.columns = [i[0] for i in cur.description]
-    return (df)
+    return df
   
   except:
     print(sql_query)
     traceback.print_exc()
-    return (result)
+    return result

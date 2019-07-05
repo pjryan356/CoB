@@ -1,4 +1,4 @@
-import RMIT_colours as rc
+
 
 import plotly.graph_objs as go
 
@@ -13,7 +13,7 @@ import dash_html_components as html
 
 import base64
 
-
+import general.RMIT_colours as rc
 from general.db_helper_functions import (
   connect_to_postgres_db,
   db_extract_query_to_dataframe

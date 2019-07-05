@@ -1,15 +1,12 @@
-
 import sys
 sys.path.append('c:\\Peter\\GitHub\\CoB\\')
 
 import general.RMIT_colours as rc
 
-
 from general.db_helper_functions import (
   connect_to_postgres_db,
   db_extract_query_to_dataframe
 )
-
 
 
 '''--------------------------------- Connect to Database  ----------------------------'''

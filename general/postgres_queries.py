@@ -1,5 +1,5 @@
 ## Various queries for the CoB postgres database
-# Peter Ryan Nov 2018
+# Peter Ryan Feb 2019
 
 import sys
 sys.path.append('c:\\Peter\\GitHub\\CoB\\')
@@ -57,4 +57,51 @@ def qry_delete_after_term(schema, table, term_code='9000'):
   if term_code != None:
     qry += " WHERE term_code > '{}'" \
            "".format(term_code)
+  return qry
+
+
+def qry_course_enhancement_list(year, semester, tbl='vw100_courses', schema='course_enhancement'):
+  # Returns a dataframe of the courses undergoing enhancement course in year, semester from db (cur)
+  qry = " SELECT DISTINCT \n" \
+        "   ce.level, ce.school_code, ce.course_code, \n" \
+        "   ce.course_code_ces, \n" \
+        "   ce.cluster_code, \n" \
+        "   cd.school_name, cd.course_name \n" \
+        " FROM ( \n" \
+        "   SELECT level, school_code, course_code, course_code_ces, cluster_code  \n" \
+        "	  FROM {0}.{1} \n" \
+        "   WHERE year = {2} AND semester = {3} \n" \
+        "       AND cob_selected IS NOT False \n" \
+        "   ) ce \n" \
+        " LEFT OUTER JOIN ( \n" \
+        "   SELECT * FROM lookups.vw_course_details_recent \n" \
+        "   ) cd ON (SPLIT_PART(cd.course_code,'-', 1) = SPLIT_PART(ce.course_code,'-', 1))\n" \
+        " ORDER BY ce.school_code, ce.course_code \n" \
+        "".format(schema, tbl,
+                  year, semester)
+  
+  return qry
+
+
+def qry_course_enhancement_list_2019s2(year, semester, tbl='vw100_courses', schema='course_enhancement'):
+  # Returns a dataframe of the courses undergoing enhancement course in year, semester from db (cur)
+  qry = " SELECT DISTINCT \n" \
+        "   ce.level, ce.school_code, ce.course_code, \n" \
+        "   ce.course_code_ces, \n" \
+        "   ce.cluster_code, \n" \
+        "   cd.school_name, cd.course_name \n" \
+        " FROM ( \n" \
+        "   SELECT level, school_code, course_code, course_code_ces, cluster_code  \n" \
+        "	  FROM {0}.{1} \n" \
+        "   WHERE year = {2} AND semester = {3} \n" \
+        "       AND cob_selected <> 'True' \n" \
+        "       AND la_selected = 'True' \n" \
+        "   ) ce \n" \
+        " LEFT OUTER JOIN ( \n" \
+        "   SELECT * FROM lookups.vw_course_details_recent \n" \
+        "   ) cd ON (SPLIT_PART(cd.course_code,'-', 1) = SPLIT_PART(ce.course_code,'-', 1))\n" \
+        " ORDER BY ce.school_code, ce.course_code \n" \
+        "".format(schema, tbl,
+                  year, semester)
+  print (qry)
   return qry
