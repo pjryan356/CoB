@@ -87,10 +87,10 @@ else:
   start_year = 2017
   
   year = 2019
-  semester = 1
+  semester = 2
   
   enrl_year = 2019
-  enrl_semester = 1
+  enrl_semester = 2
   
 
 # Setup app
@@ -547,7 +547,7 @@ def make_course_pack(course_code):
         html.Div(
           [
             html.P(
-              [dcc.Markdown('**Qualitative data**'.format())],
+              [dcc.Markdown('**Qualitative data**')],
               style={'fontSize': 24,
                      'margin-left': 20, })
           ],

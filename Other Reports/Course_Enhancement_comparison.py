@@ -1,27 +1,16 @@
-
-
+import plotly
+from tabulate import tabulate
 import plotly.graph_objs as go
-#from plotly import tools
 import plotly.offline
 
 
 from tabulate import tabulate
 import pandas as pd
 import numpy as np
-#import itertools
-#import statsmodels.formula.api as smf
+
 import scipy.stats as scipystats
-#import statsmodels.api as sm
-#import statsmodels.stats.stattools as stools
-#import statsmodels.stats as stats
 from statsmodels.graphics.regressionplots import *
 import matplotlib.pyplot as plt
-#import seaborn as sns
-#import copy
-#import math
-#import time
-
-
 
 import sys
 sys.path.append('c:\\Peter\\GitHub\\CoB\\')
@@ -33,17 +22,20 @@ from general.db_helper_functions import (
   db_extract_query_to_dataframe
 )
 
-def create_ce_comparison_chart(cur, width=800, height=600, display=False, save=False, start_year=2016, end_year=2018,
+def create_ce_comparison_chart(cur, width=800, height=600, display=False, save=False, start_year=2017, end_year=2019,
                                show_title=True,
                                show_annotations=True,
                                show_ylabel=True,
-                               show_pval=True
+                               show_pval=True,
+                               table='vw204_ce_evaluation'
                                ):
-  qry = " SELECT year, semester, course_code_ces, gts_delta::numeric, CASE WHEN ce=true THEN 1 ELSE 0 END AS ce \n" \
-        "	FROM course_enhancement.vw204_ce_evaluation \n" \
+  qry = " SELECT year, semester, course_code_ces, gts_delta::numeric, " \
+        "  CASE WHEN la=true THEN 1 ELSE 0 END AS ce" \
+        "	FROM course_enhancement.{} \n" \
         " WHERE gts_pre IS NOT NULL AND gts_post IS NOT NULL \n" \
         "   AND year >= {} AND year <= {} \n" \
-        "".format(start_year, end_year) \
+        "".format(table,
+                  start_year, end_year)
   
   df1 = db_extract_query_to_dataframe(qry, cur, print_messages=False)
   df1['gts_delta'] = df1['gts_delta'].astype(float)
@@ -57,7 +49,7 @@ def create_ce_comparison_chart(cur, width=800, height=600, display=False, save=F
   nms_sem = []
   labels = []
   
-  for sem in [[2016, 2], [2017, 1], [2017, 2], [2018, 1], [2018, 2]]:
+  for sem in [[2017, 1], [2017, 2], [2018, 1], [2018, 2], [2019, 1], [2019, 2]]:
     df_temp1 = df1.query('ce==1 & year=={} & semester=={}'.format(sem[0], sem[1]))
     df_temp2 = df1.query('ce==0 & year=={} & semester=={}'.format(sem[0], sem[1]))
     if show_pval == True:
@@ -74,16 +66,17 @@ def create_ce_comparison_chart(cur, width=800, height=600, display=False, save=F
     ms_sem.append(scipystats.sem(df_temp1.gts_delta))
     nms_sem.append(scipystats.sem(df_temp2.gts_delta))
   
-  
-  #print(pval)
+  print(ms_mean)
+  print(nms_mean)
+  print(pval)
   #print(labels)
 
   trace1 = go.Bar(
     x=labels,
     y=nms_mean,
-    text=['%.2f' % val for val in nms_mean],
-    textposition='top center',
-    name='No Course Enhancement',
+    text=['%.1f' % val for val in nms_mean],
+    textposition='outside',
+    name='Other',
     marker=dict(
       color=rc.RMIT_Red),
     error_y=dict(
@@ -97,8 +90,8 @@ def create_ce_comparison_chart(cur, width=800, height=600, display=False, save=F
     x=labels,
     y=ms_mean,
     text=['%.2f' % val for val in ms_mean],
-    textposition='outside center',
-    name='Course Enhancement',
+    textposition='outside',
+    name='Enhanced',
     marker=dict(
       color=rc.RMIT_Black),
     error_y=dict(
@@ -109,10 +102,10 @@ def create_ce_comparison_chart(cur, width=800, height=600, display=False, save=F
     )
   )
   
-  data = [trace1, trace2]
+  data = [trace2, trace1]
   
   if show_title == True:
-    title='Mean "Change in Course GTS"'
+    title='Mean Change in Course GTS'
   else:
     title = None
   
@@ -135,6 +128,7 @@ def create_ce_comparison_chart(cur, width=800, height=600, display=False, save=F
         size=xtick_size,
       )
     ),
+    plot_bgcolor=rc.RMIT_White,
     yaxis=dict(
       title=ylabel,
       titlefont=dict(
@@ -142,8 +136,8 @@ def create_ce_comparison_chart(cur, width=800, height=600, display=False, save=F
       ),
     legend=dict(
       orientation="v",
-      x=0.01,
-      y=1)
+      x=0.6,
+      y=0.95)
   )
   
   if show_annotations == True:
@@ -152,7 +146,7 @@ def create_ce_comparison_chart(cur, width=800, height=600, display=False, save=F
                         text='The "Change in course GTS" is between:<br>'
                              '  1. The average GTS of the two previous offerings of the course; and<br>'
                              '  2. The average GTS of the labeled and next offering of the course<br>'
-                             ' There is no next offering data for 2018 S2',
+                             ' There is no next offering data for 2019 S1',
                         font=dict(size=12),
                         xref='paper',
                         yref='paper',
@@ -166,11 +160,96 @@ def create_ce_comparison_chart(cur, width=800, height=600, display=False, save=F
   if display == True:
     plotly.offline.plot(
             fig,
-            filename='H:\\Projects\\CoB\\CES\\Course Enhancement\\CE_vs_NCE_20182.html'
+            filename='H:\\Projects\\CoB\\CES\\Course Enhancement\\CE_vs_NCE_2019S2.html'
             )
   if save == True:
     plotly.plotly.image.save_as(
       fig,
-      filename='H:\\Projects\\CoB\\CES\\Course Enhancement\\CE_vs_NCE_20182.png'
+      filename='H:\\Projects\\CoB\\CES\\Course Enhancement\\CE_vs_NCE_2019S2.png'
     )
+  return fig
+
+
+def create_ce_growth(cur, width=800, height=600, start_year=2017, end_year=2019,
+                     show_title=True,
+                     show_annotations=True,
+                     show_ylabel=True
+                     ):
+  qry = " SELECT year, semester, count(DISTINCT course_code_ces) AS count \n " \
+        " FROM course_enhancement.tbl_courses \n " \
+        " WHERE " \
+        "     cob_engagement = True \n" \
+        "      AND level != 'VN' \n" \
+        "      AND year >= {} AND year <= {}" \
+        " GROUP BY  year, semester \n" \
+        "".format(start_year, end_year)
+  
+  df1 = db_extract_query_to_dataframe(qry, cur, print_messages=False)
+  
+  labels = []
+  for sem in [[2017, 1], [2017, 2], [2018, 1], [2018, 2], [2019, 1], [2019, 2]]:
+    labels.append('{} S{}'.format(sem[0], sem[1]))
+
+  trace1 = go.Bar(
+    x=labels,
+    y=df1['count'],
+    name='No. of Courses',
+    textposition='inside',
+    marker=dict(
+      color=rc.RMIT_Black),
+  )
+  data = [trace1]
+  
+  if show_title == True:
+    title = 'Growth in Course Enhancement'
+  else:
+    title = None
+  
+  if show_ylabel == True:
+    ylabel = 'Change in GTS'
+  else:
+    ylabel = None
+  
+  layout = go.Layout(
+    title=title,
+    titlefont=dict(size=24),
+    showlegend=True,
+    width=width,
+    height=height,
+    margin=dict(b=20, l=25, r=10, t=10),
+    hidesources=True,
+    xaxis=dict(
+      tickfont=dict(
+        size=10,
+      )
+    ),
+    plot_bgcolor=rc.RMIT_White,
+    yaxis=dict(
+      title=ylabel,
+      titlefont=dict(
+        size=16, )
+    ),
+    legend=dict(
+      orientation="v",
+      x=0.01,
+      y=0.90)
+  )
+  
+  if show_annotations == True:
+    annotations = [dict(x=0.6,
+                        y=1,
+                        text='The "Change in course GTS" is between:<br>'
+                             '  1. The average GTS of the two previous offerings of the course; and<br>'
+                             '  2. The average GTS of the labeled and next offering of the course<br>'
+                             ' There is no next offering data for 2019 S1',
+                        font=dict(size=12),
+                        xref='paper',
+                        yref='paper',
+                        showarrow=False
+                        ),
+                   ]
+    layout['annotations'] = annotations
+  
+  fig = go.Figure(data=data, layout=layout)
+  
   return fig

@@ -12,6 +12,35 @@ from general.sams_helper_functions import *
 from general.sams_queries import *
 
 
+# Create connections
+# create sams engine this is the connection to the oracle database
+password_str = input("SAMS Password: ") ## Input password
+sams_engine = return_sams_engine(password_str=password_str)
+
+# Get current semester information
+current_year = 2019
+#current_year = int(input("Current year: "))
+
+current_semester = 2
+#current_semester = int(input("Current semester (1 or 2 or 3): "))
+
+#location = input("Location (MELB, SBM, SIM): ")
+#level = input("Level (VE, HE): ")
+#term_code_final = input("Final term code: ")
+location = 'MELB'
+level = 'VE'
+term_code_final = '1945'
+
+equivalent_semesters = False
+#equivalent_semesters = bool(input("Use equivalent semester (True or False): "))
+
+st_year = 2015
+#st_year = int(input("Earliest Year: "))
+
+sheet_pw = 'ADG'
+#sheet_pw = input("Select Password: ")
+
+
 def get_school_name(school_code):
   if school_code == '610P':
     return 'CBO'
@@ -209,31 +238,6 @@ def get_term_code(location, semester=None, level='VE'):
       print('Selection not available')
       return None
     
-# Create connections
-# create sams engine this is the connection to the oracle database
-password_str = input("SAMS Password: ") ## Input password
-sams_engine = return_sams_engine(password_str=password_str)
-
-# Get current semester information
-current_year=2019
-#current_year = int(input("Current year: "))
-
-current_semester=1
-#current_semester = int(input("Current semester (1 or 2 or 3): "))
-
-location = input("Location (MELB, SBM, SIM): ")
-level = input("Level (VE, HE): ")
-term_code_final = input("Final term code: ")
-
-equivalent_semesters = False
-#equivalent_semesters = bool(input("Use equivalent semester (True or False): "))
-
-st_year=2015
-#st_year = int(input("Earliest Year: "))
-
-sheet_pw = 'ADG'
-#sheet_pw = input("Select Password: ")
-
 
 term_cat = get_term_category(location, current_semester)
 term_code = get_term_code(location, current_semester)
@@ -266,7 +270,7 @@ for i_course, r_course in df_courses.iterrows():
     print(sams_qry)
   
   # open template
-  directory = 'H:\\Projects\\CoB\\Course_Assessment_Moderation\\2019S1\\'
+  directory = 'H:\\Projects\\CoB\\Course_Assessment_Moderation\\2019S2\\'
   template = 'grade_distribution_template.xlsx'
   wb = openpyxl.load_workbook(directory+template)
   sheet = wb['data']
@@ -298,5 +302,5 @@ for i_course, r_course in df_courses.iterrows():
   if i_course%10 == 0:
     print('{} courses in {} seconds'.format(i_course, (dt.datetime.now() - start).seconds))
 
-print('{} courses in {} seconds'.format((dt.datetime.now() - start).seconds))
+print('{} courses in {} seconds'.format(i_course, (dt.datetime.now() - start).seconds))
 

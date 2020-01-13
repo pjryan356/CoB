@@ -7,8 +7,8 @@ import os
 import pandas as pd
 import psycopg2
 from sqlalchemy import (create_engine, orm)
-
-
+from tabulate import tabulate
+import datetime as dt
 
 # Create connections
 # create postgres engine this is the connection to the oracle database
@@ -26,73 +26,43 @@ postgres_con = postgres_engine.connect()
 
 # Inputs
 directory = 'C:\\Users\\e35137\\Downloads\\' #input("Directory: ")
-filename = 'ces-response-rate-report-07-june.xlsx' #input("Filename: ")
-date_tbl_name = '20190607' #input("File_date: ")
-
-# get data from excel doc
-df = pd.read_excel(directory + filename,
-                   sheet_name='HE',
-                   skiprows=3,
-                   usecols=[0,1,2,3,4,5,6,7,8,9,10,11,12,13],
-                   skipfooter=1)
-
-df.columns = ['classkey', 'level', 'course_name', 'college', 'school_code',
-              'session_code', 'section_code', 'survey_start_date', 'survey_end_date',
-              'campus', 'invitations', 'responses', 'response_rate']
+filename = 'RRate20191024.xlsx' #input("Filename: ")
+date_tbl_name = 'tbl_class_responses' #input("File_date: ")
 
 
-#year = input("Year: ")
-#level = input("Semester: ")
-#date = input("Date: ")
+def load_ces_response_rate(date, directory, filename, schema='ces_responses', date_tbl_name='tbl_class_responses'):
+  
+  for sector in ['HE', 'VE']:
+    # get data from excel docprint(tabulate(df, headers='keys'))
+    df = pd.read_excel(directory + filename,
+                       sheet_name=sector,
+                       skiprows=3,
+                       usecols=[0, 1, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+                       skipfooter=1)
 
-#df['year'] = int(year)
-#df['semester'] = int(semester)
-#df['level'] = level
+    df.columns = ['classkey', 'level', 'college', 'school_code',
+                  'session_code', 'section_code', 'survey_start_date', 'survey_end_date',
+                  'campus', 'invitations', 'responses']
+  
+    df = df.infer_objects()
 
-
-df = df.infer_objects()
-
-df[['invitations', 'responses', 'response_rate']] \
-  = df[['invitations', 'responses', 'response_rate']].apply(pd.to_numeric, errors='coerce')
-
-
-df.to_sql(name='he_{}'.format(date_tbl_name),
-            con=postgres_engine,
-            schema='ces_responses',
-            if_exists='append',
-            index=False
-          )
-
-df = pd.read_excel(directory + filename,
-                   sheet_name='VE',
-                   skiprows=3,
-                   usecols=[0,1,2,3,4,5,6,7,8,9,10,11,12,13],
-                   skipfooter=1)
-
-df.columns = ['classkey', 'level', 'course_name', 'college', 'school_code',
-              'session_code', 'section_code', 'survey_start_date', 'survey_end_date',
-              'campus', 'invitations', 'responses', 'response_rate']
+    df[['invitations', 'responses']] \
+      = df[['invitations', 'responses']].apply(pd.to_numeric, errors='coerce')
 
 
-#year = input("Year: ")
-#level = input("Semester: ")
-#date = input("Date: ")
-
-#df['year'] = int(year)
-#df['semester'] = int(semester)
-#df['level'] = level
-
-
-df = df.infer_objects()
-
-df[['invitations', 'responses', 'response_rate']] \
-  = df[['invitations', 'responses', 'response_rate']].apply(pd.to_numeric, errors='coerce')
-
-df.to_sql(name='ve_{}'.format(date_tbl_name),
-            con=postgres_engine,
-            schema='ces_responses',
-            if_exists='append',
-            index=False
-          )
+    df['date'] = date
+    
+    df = df[['level', 'date', 'classkey', 'college', 'school_code',
+             'survey_start_date', 'survey_end_date',
+             'campus', 'invitations', 'responses']]
+    print(tabulate(df, headers='keys'))
+    
+    df.to_sql(name='{}'.format(date_tbl_name),
+              con=postgres_engine,
+              schema=schema,
+              if_exists='append',
+              index=False
+              )
 
 
+load_ces_response_rate(dt.date(2019, 10, 24), directory, filename, 'ces_responses')

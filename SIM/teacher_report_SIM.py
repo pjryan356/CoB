@@ -24,7 +24,7 @@ if set_values == 'Y':
   semester = input("Semester: ")
 else:
   year = 2019
-  semester = 1
+  semester = 2
 
 '''--------------------------------- Connect to Database  ----------------------------'''
 # create postgres engine this is the connection to the postgres database
@@ -248,8 +248,8 @@ for i_course, r_course in df_courses.iterrows():
     print(save_directory + filename)
     print(e)
     
+    
 '''----------------------------- create dash functions -------------------------------------'''
-
 
 def make_course_pack(course_code_ces):
   # Main function that creates the Data pack for given course_code

@@ -5,7 +5,7 @@ import datetime as dt
 import psycopg2
 from sqlalchemy import (create_engine, orm, String)
 import pandas as pd
-import tabulate
+from tabulate import tabulate
 
 import sys
 sys.path.append('c:\\Peter\\GitHub\\CoB\\')
@@ -45,9 +45,6 @@ try:
 except:
   print(sams_qry)
 
-print(sams_qry)
-int('d')
-#print(tabulate.tabulate(df, headers='keys'))
 
 x = postgres_con.execute(qry_delete_after_term(schema='programs',
                                                table='tbl_plan_course_structure',

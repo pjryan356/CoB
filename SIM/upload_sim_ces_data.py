@@ -40,7 +40,7 @@ def upload_sim_ces_data_from_excel(directory, filename, engine,
                 ]
   
   df['year'] = int(2019)
-  df['semester'] = int(1)
+  df['semester'] = int(2)
   
   df['course_code'] = df['subject'] + df['catalog'].map(str)
   
@@ -89,7 +89,6 @@ def upload_sim_ces_data_from_excel(directory, filename, engine,
   
   print (df_ces_com)
   
-  '''
   try:
     df_ces_com.to_sql(
       name='tbl_course_teacher_comments',
@@ -102,12 +101,12 @@ def upload_sim_ces_data_from_excel(directory, filename, engine,
     print('comment input failed' + filename)
     print(e)
     pass
-  '''
+ 
   
 # get data from excel doc
 # open template
 directory = 'H:\\Data\\SIM\\'
-filename = 'SIM CES Jan 2019.xlsx'
+filename = 'SIM CES Jul 2019.xlsx'
 
 
 print(os.path.join(directory, filename))

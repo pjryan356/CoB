@@ -29,8 +29,8 @@ directory = input("Directory: ")
 filename = input("Filename: ")
 
 
-directory = 'C:\\Peter\\junk\\'
-filename = 'course_enhancement_2019_s2_extra_2.csv'
+directory = 'courses_20191017.csv'
+filename = 'courses_20191017.csv'
 
 # get data csv
 df = pd.read_csv(directory + filename)

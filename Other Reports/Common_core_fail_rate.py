@@ -1,4 +1,4 @@
-import RMIT_colours as rc
+
 
 import plotly
 import plotly.plotly as py
@@ -8,11 +8,11 @@ from plotly import tools
 import sys
 sys.path.append('c:\\Peter\\GitHub\\CoB\\')
 
+import general.RMIT_colours as rc
 from tabulate import tabulate
 
 import plotly.offline
 
-from Course_enhancement_graphs import *
 
 
 from general.db_helper_functions import (
@@ -103,7 +103,7 @@ def line_trace_course_fr(course_name,
     course_name=course_name,
     degree_type=degree_type)
   
-  df1 = db_extract_query_to_dataframe(qry, cur, print_messages=False)
+  df1 = db_extract_query_to_dataframe(qry, postgres_cur, print_messages=False)
   if semester == 1:   df1 = df1.loc[df1['semester'] == 1]
   elif semester == 2: df1 = df1.loc[df1['semester'] == 2]
   
@@ -149,7 +149,7 @@ def line_trace_course_fr_diff(course_name,
                               dash_type=None,
                               showlegend=True):
   qry = qry_location_diff_history(course_name)
-  df1 = db_extract_query_to_dataframe(qry, cur, print_messages=False)
+  df1 = db_extract_query_to_dataframe(qry, postgres_cur, print_messages=False)
   if semester == 1:
     df1 = df1.loc[df1['semester'] == 1]
   elif semester == 2:
@@ -368,27 +368,7 @@ def create_location_diff_course_graph(
   print(filename)
   plotly.offline.plot(fig, filename + '.html')
   return fig
-'''
-create_location_course_graph(
-  location='ONSHORE',
-  semester=None,
-  folder='C:\\Peter\\CoB\\Request\\Jason\\',
-  height=400,
-  width=800)
 
-create_location_course_graph(
-  location='SIM',
-  semester=None,
-  folder='C:\\Peter\\CoB\\Request\\Jason\\',
-  height=400,
-  width=800)
-
-create_location_diff_course_graph(
-  semester=None,
-  folder='C:\\Peter\\CoB\\Request\\Jason\\',
-  height=400,
-  width=800)
-'''
 
 def create_course_graph(
   course_name,
@@ -419,7 +399,7 @@ def create_course_graph(
         ' ORDER BY location' \
         ''.format(degree, course_name)
 
-  df_locs = db_extract_query_to_dataframe(qry, cur, print_messages=False)
+  df_locs = db_extract_query_to_dataframe(qry, postgres_cur, print_messages=False)
   
   for i, r in df_locs.iterrows():
     colour = colourList[i]
@@ -530,11 +510,10 @@ for degree in degList:
           " WHERE degree_type = '{}' \n" \
           "       AND course_name = '{}' " \
           "       AND location <> 'UPH' \n" \
-          "       AND location <> 'VIETNAM' \n" \
           ' ORDER BY location' \
           ''.format(degree, course_name)
 
-    df_locs = db_extract_query_to_dataframe(qry, cur, print_messages=False)
+    df_locs = db_extract_query_to_dataframe(qry, postgres_cur, print_messages=False)
 
     for i, r in df_locs.iterrows():
       colour = colourList[i]
@@ -602,7 +581,29 @@ for degree in degList:
   for j in fig['layout']['annotations']:
     j['font'] = dict(size=12)
     
-  folder = 'C:\\Peter\\CoB\\CES\\2018_Semester_1\\'
-  filename = folder + 'CC_{}_graph_NV.html'.format(degree)
+  folder = 'C:\\Peter\\'
+  filename = folder + 'CC_{}_graph.html'.format(degree)
   plotly.offline.plot(fig, filename=filename)
-    
+  
+
+'''
+create_location_course_graph(
+  location='ONSHORE',
+  semester=None,
+  folder='C:\\Peter\\CoB\\Request\\Jason\\',
+  height=400,
+  width=800)
+
+create_location_course_graph(
+  location='SIM',
+  semester=None,
+  folder='C:\\Peter\\CoB\\Request\\Jason\\',
+  height=400,
+  width=800)
+
+create_location_diff_course_graph(
+  semester=None,
+  folder='C:\\Peter\\CoB\\Request\\Jason\\',
+  height=400,
+  width=800)
+'''

@@ -115,11 +115,11 @@ def sim_line_graph_measure_surveys(df1,
         y=y,
         name='{}'.format(staff_type),
         text=data_label,
-        line=go.Line(
+        line=go.scatter.Line(
           width=2,
           color=get_colour(measure),
           dash=get_dash(staff_type)),
-        marker=go.Marker(
+        marker=go.scatter.Marker(
           color=get_colour(measure),
           size=8,
           symbol=get_symbol(staff_type)
@@ -217,11 +217,11 @@ def sim_line_graph_measure_surveys_mulitiple(df1,
         y=y,
         name='{} ({})'.format(get_name(measure), staff_type),
         text=data_label,
-        line=go.Line(
+        line=go.scatter.Line(
           width=2,
           color=get_colour(measure),
           dash=get_dash(staff_type)),
-        marker=go.Marker(
+        marker=go.scatter.Marker(
           color=get_colour(measure),
           size=8,
           symbol=get_symbol(staff_type)
@@ -416,8 +416,8 @@ def generate_sim_ces_table(df1, course_code):
          html.Th('Lecturer'),
          html.Th('Satisfaction'),
          ],
-        style={'border': 'solid',
-               'max_height': 5 }
+        style={
+               'max_height': 5}
       )
     ] +
     
@@ -435,7 +435,7 @@ def generate_sim_ces_table(df1, course_code):
         style={'width': 1,
                'height': 5}
       ) for i in range(len(f_df))],
-    style={'border': 'solid',
+    style={
            'font-size': 11,
            'wdith': 400,
            'height': 5,
@@ -459,7 +459,6 @@ def generate_sim_ces_pd_table(df1, course_code):
                 font=dict(size=18,
                           color=rc.RMIT_White),
                 height=40,
-                format=dict(border='solid'),
                 fill=dict(color=rc.RMIT_DarkBlue)
                 ),
     cells=dict(line=dict(color=[rc.RMIT_White, rc.RMIT_White,
@@ -475,7 +474,6 @@ def generate_sim_ces_pd_table(df1, course_code):
                                 rc.RMIT_Black, rc.RMIT_Black, rc.RMIT_Black
                                 ]),
                height=28,
-               format=dict(border='solid'),
                fill=dict(
                  color=[rc.RMIT_DarkBlue, rc.RMIT_DarkBlue, rc.RMIT_DarkBlue,
                         rc.RMIT_Arctic, rc.RMIT_Arctic,
