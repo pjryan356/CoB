@@ -11,8 +11,17 @@ import sys
 sys.path.append('c:\\Peter\\GitHub\\CoB\\')
 
 import general.RMIT_colours as rc
+'''
+sns.swarmplot(y = "city",
+              x = 'O3',
+              data = pollution_mar,
+              # Decrease the size of the points to avoid crowding
+              size = 3)
 
-
+# Give a descriptive title
+plt.title('March Ozone levels by city')
+plt.show()
+'''
 
 '''--------------------------------- Connect to Database  ----------------------------'''
 
@@ -78,7 +87,7 @@ postgres_con, postgres_cur = connect_to_postgres_db(con_string)
 
 '''------------------------------ Helper functions -----------------------------------'''
 
-def get_course_ce_ces_change(cur, tbl='vw403_change_2019s1_details', schema='course_enhancement'):
+def get_course_ce_ces_change(cur, tbl='vw404_change_2019s1_reliable', schema='course_enhancement'):
   # Returns a dataframe with change in CES data for 2019
   qry = ' SELECT \n' \
         "   * \n" \

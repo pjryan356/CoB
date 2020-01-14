@@ -1,7 +1,7 @@
 import base64
 
 import plotly
-import plotly.plotly as py
+import chart_studio.plotly as py
 import plotly.graph_objs as go
 import plotly.offline
 
@@ -19,15 +19,13 @@ from general.db_helper_functions import (
 )
 
 
-
 '''--------------------------------- Initialise Parameters  ----------------------------'''
 
-folder = 'H:\\Projects\\CoB\\CES\\School Reporting\\2018 S2\\'
+folder = 'H:\\Projects\\CoB\\CES\\School Reporting\\2019 S1\\'
 
-college_short = 'SEH'
 acad_career = 'VE'
 start_year = '2015'
-end_year = '2018'
+end_year = '2019'
 
 
 '''--------------------------------- Connect to Database  ----------------------------'''
@@ -47,13 +45,15 @@ postgres_con, postgres_cur = connect_to_postgres_db(con_string)
 
 '''-------------------------------------------- Get Data -------------------------------------'''
 qry = ' SELECT * \n' \
-      ' FROM ces.vw156_college_for_graph \n' \
-      " WHERE year >= {1} AND level = '{0}'" \
+      ' FROM ces.vw157_college_for_graph \n' \
+      " WHERE year >= {1} AND level = '{0}' \n" \
+      " ORDER BY college, year, semester \n" \
       "; \n".format(acad_career, start_year)
  
 df_college = db_extract_query_to_dataframe(qry, postgres_cur, print_messages=False)
 
-#print(tabulate(df_college, headers='keys'))
+
+print(tabulate(df_college, headers='keys'))
 
 
 def line_graph_colleges_measure(df1, level, measure='gts',
@@ -79,8 +79,6 @@ def line_graph_colleges_measure(df1, level, measure='gts',
 
   for year in range(int(start_year), int(end_year) + 1):
     xlabels.append('{}<br>'.format(year))
-
-  no_terms = len(xlabels)
   
   no_terms = len(xlabels)
   
@@ -102,9 +100,15 @@ def line_graph_colleges_measure(df1, level, measure='gts',
     size_1 = []
     size_2 = []
     for i, r in df_1.iterrows():
-      size_1.append(r['population']/1000)
+      if level == 'VE':
+        size_1.append(r['population']/2000)
+      if level == 'HE':
+        size_1.append(r['population'] / 5000)
     for i, r in df_2.iterrows():
-      size_2.append(r['population']/1000)
+      if level == 'VE':
+        size_2.append(r['population']/2000)
+      if level == 'HE':
+        size_2.append(r['population'] / 5000)
 
     no_terms = len(xlabels)
     
@@ -116,13 +120,13 @@ def line_graph_colleges_measure(df1, level, measure='gts',
       text=None,
       textfont={'size': 14,
                 'color': df_1.iloc[0]['colour_html']},
-      line=go.Line(width=2,
+      line=go.scatter.Line(width=2,
                    color=df_1.iloc[0]['colour_html'],
                    ),
-      marker=go.Marker(
+      marker=go.scatter.Marker(
         color=df_1.iloc[0]['colour_html'],
         size=size_1,
-        symbol='cirle'
+        symbol='circle'
       ),
       connectgaps=True,
       mode='lines+markers',
@@ -137,10 +141,11 @@ def line_graph_colleges_measure(df1, level, measure='gts',
       y=df_2[measure].tolist(),
       name='{} S2  '.format(college_name_short),
       text=None,
-      line=go.Line(width=2,
-                   color=df_2.iloc[0]['colour_html'],
-                   dash='dot', ),
-      marker=go.Marker(
+      line=go.scatter.Line(
+        width=2,
+        color=df_2.iloc[0]['colour_html'],
+        dash='dot', ),
+      marker=go.scatter.Marker(
         color=df_2.iloc[0]['colour_html'],
         size=size_2,
         symbol='diamond'
@@ -164,7 +169,7 @@ def line_graph_colleges_measure(df1, level, measure='gts',
            xaxis=dict(
              range=[0, no_terms],
              tickvals=x,
-             tickfont={'size': 16},
+             tickfont={'size': 12},
              showgrid=False,
              ticktext=xlabels,
              ticks='outside',
@@ -176,11 +181,11 @@ def line_graph_colleges_measure(df1, level, measure='gts',
            ),
            yaxis=dict(
              title=ytitle,
-             titlefont={'size': 18},
+             titlefont={'size': 14},
              range=yrange,
              tickvals=yticks,
              ticklen=5,
-             tickfont={'size': 16},
+             tickfont={'size': 12},
              zeroline=True,
              zerolinewidth=2,
            ),
@@ -191,7 +196,7 @@ def line_graph_colleges_measure(df1, level, measure='gts',
            hidesources=True,
          )
          }
-  filename = folder + '{}_{}_{}_2018'.format(acad_career, 'Colleges', measure)
+  filename = folder + '{}_{}_{}_2019S1'.format(acad_career, 'Colleges', measure)
   plotly.offline.plot(fig, filename + '.html')
   py.image.save_as(fig, filename + '.png')
   return fig
@@ -203,5 +208,5 @@ for m in ['gts', 'osi', 'gts_mean', 'osi_mean']:
                   acad_career,
                   measure=m,
                   start_year=start_year, end_year=end_year,
-                  height=600,
-                  width=1100)
+                  height=350,
+                  width=450)

@@ -1,10 +1,8 @@
-import base64
-
 import plotly
-import plotly.plotly as py
 import plotly.graph_objs as go
 import plotly.offline
-
+import numpy as np
+import scipy.stats as scipystats
 from tabulate import tabulate
 
 import sys
@@ -99,10 +97,11 @@ def line_graph_school_measure(df1, school, level='HE', measure='gts',
     text=None,
     textfont={'size': 14,
               'color': df_1.iloc[0]['colour_html']},
-    line=go.Line(width=2,
-                 color=df_1.iloc[0]['colour_html'],
-                 dash=sem1_text, ),
-    marker=go.Marker(
+    line=go.scatter.Line(
+      width=2,
+      color=df_1.iloc[0]['colour_html'],
+      dash=sem1_text, ),
+    marker=go.scatter.Marker(
       color=df_1.iloc[0]['colour_html'],
       size=8,
       symbol='circle'
@@ -120,10 +119,11 @@ def line_graph_school_measure(df1, school, level='HE', measure='gts',
     y=df_2[measure].tolist(),
     name='Semester 2  ',
     text=None,
-    line=go.Line(width=2,
-                 color=df_2.iloc[0]['colour_html'],
-                 dash='dot', ),
-    marker=go.Marker(
+    line=go.scatter.Line(
+      width=2,
+      color=df_2.iloc[0]['colour_html'],
+      dash='dot', ),
+    marker=go.scatter.Marker(
       color=df_2.iloc[0]['colour_html'],
       size=8,
       symbol='diamond'
@@ -143,8 +143,8 @@ def line_graph_school_measure(df1, school, level='HE', measure='gts',
       text=df_targets['gts_target'].tolist(),
       textfont={'size': 14,
                 'color': rc.RMIT_Black},
-      line=go.Line(width=2, color=rc.RMIT_Black),
-      marker=go.Marker(
+      line=go.scatter.Line(width=2, color=rc.RMIT_Black),
+      marker=go.scatter.Marker(
         color=rc.RMIT_Black,
         size=8,
         symbol='square'
@@ -236,7 +236,7 @@ def line_trace_school_measure(df1,
     try: colour = df_sem.iloc[0]['colour_html']
     except: pass
   
-  print(len(df_sem))
+  #print(len(df_sem))
   
   if len(df_sem) == 0 and school == 'CoB':
     colour = rc.RMIT_Black
@@ -245,14 +245,14 @@ def line_trace_school_measure(df1,
     elif semester == 2:
       df_sem = df_cob.loc[df_cob['semester'] == 2]
     
-    print(df_sem)
+    #print(df_sem)
     
   if school in ['VBE', 'CoB']:
     name = '<span style="color: {0}">{1} ({2})</span>'.format(colour, school, level)
   else:
     name = '<span style="color: {0}">{1}</span>'.format(colour, school)
 
-  print(school, colour, name)
+  #print(school, colour, name)
   
   # Create Semester trace (solid)
   trace = go.Scatter(
@@ -262,10 +262,11 @@ def line_trace_school_measure(df1,
     text=None,
     textfont={'size': 14,
               'color': colour},
-    line=go.Line(width=3,
-                 color=colour,
-                 dash=dash_type),
-    marker=go.Marker(
+    line=go.scatter.Line(
+      width=3,
+      color=colour,
+      dash=dash_type),
+    marker=go.scatter.Marker(
       color=colour,
       size=8,
       symbol='diamond'
@@ -278,6 +279,97 @@ def line_trace_school_measure(df1,
   return trace
 
 
+def line_trace_school_course_mean_measure(
+  df1,
+  school,
+  level='HE',
+  measure='gts',
+  start_year=2014, end_year=2019,
+  semester=None,
+  dash_type=None,
+  line_color=None,
+  df_cob=None,
+  xoffset=0,
+  err=False):
+  
+  
+  df_school = df1.loc[df1['school_name_short'] == school]
+  
+  if school == 'CoB':
+    df_school = df1
+    
+  if level != 'All':
+    df_school = df_school.loc[df_school['level'] == level]
+  else:
+    df_school = df_school.loc[df_school['level'] == 'NA']
+
+  if semester == 1:
+    df_sem = df_school.loc[df1['semester'] == 1]
+  elif semester == 2:
+    df_sem = df_school.loc[df1['semester'] == 2]
+  # print(tabulate(df_sem, headers='keys'))
+  
+  x = [i - 0.5 + xoffset for i in range(1, int(end_year) - int(start_year) + 2)]
+  
+  if line_color != None:
+    if school == 'CoB':
+      colour = line_color
+    
+  else:
+    try:
+      colour = df_sem.iloc[0]['colour_html']
+      if school == 'CoB':
+        colour = '#000000'
+    except:
+      pass
+
+  # print(len(df_sem))
+
+  
+  if school in ['VBE', 'CoB']:
+    name = '<span style="color: {0}">{1} ({2})</span>'.format(colour, school, level)
+  else:
+    name = '<span style="color: {0}">{1}</span>'.format(colour, school)
+
+  # print(school, colour, name)
+  means=[]
+  errs=[]
+  for yr in range(start_year, end_year + 1):
+    df_sem.loc[df_sem['year'] == yr]
+    means.append(np.mean(df_sem.loc[df_sem['year'] == yr][measure]))
+    errs.append(scipystats.sem(df_sem.loc[df_sem['year'] == yr][measure]))
+    
+  if err==False:
+    errs=None
+  # Create Semester trace (solid)
+  trace = go.Scatter(
+    x=x,
+    y=means,
+    name=name,
+    text=None,
+    textfont={'size': 14,
+              'color': colour},
+    line=go.scatter.Line(
+      width=3,
+      color=colour,
+      dash=dash_type),
+    marker=go.scatter.Marker(
+      color=colour,
+      size=8,
+      symbol='diamond'
+    ),
+    error_y=dict(
+      type='data',
+      array=errs,
+      visible=True,
+      color=colour),
+    connectgaps=False,
+    mode='lines+markers',
+    showlegend=True,
+    textposition='bottom right'
+  )
+  return trace
+
 def create_school_RMIT_graph(
   df1,
   measure='gts',
@@ -286,26 +378,52 @@ def create_school_RMIT_graph(
   height=600,
   width=1100,
   background='#000000',
-  df_cob=None):
+  df_cob=None,
+  school=None,
+  mean=False):
   
   if background == '#000000':
     line_col = '#FFFFFF'
   else:
     line_col = None
   
+  if mean:
+    ytitle = 'Mean'
+    yrange = [3.6, 4.4]
+    ytickvals = [3.6, 3.7, 3.8, 3.9, 4.0, 4.1, 4.2, 4.3, 4.4]
+    yticktext = [3.6, '', 3.8, '', 4.0, '', 4.2, '', 4.4]
+
+  else:
+    ytitle = 'Percent Agree'
+    yrange = [68, 88]
+    ytickvals = [70, 72.5, 75, 77.5, 80, 82.5, 85, 87.5]
+    yticktext = [70, '', 75, '', 80, '', 85, '']
+
   traces = []
   x = [i + 0.5 for i in range(0, (int(end_year) - int(start_year) + 1))]
   xlabels = ['{}'.format(i) for i in range(int(start_year), int(end_year) + 1)]
   
-  for school in [['ACCT', 'HE'],
-                 ['BITL', 'HE'],
-                 ['EFM', 'HE'],
-                 ['GSBL', 'HE'],
-                 ['MGT', 'HE'],
-                 ['VBE', 'HE'],
-                 ['VBE', 'VE'],
-                 ['CoB', 'HE'],
-                 ]:
+  if school == None:
+    school_list = [['ACCT', 'HE'],
+                   ['BITL', 'HE'],
+                   ['EFM', 'HE'],
+                   ['GSBL', 'HE'],
+                   ['MGT', 'HE'],
+                   ['VBE', 'HE'],
+                   ['VBE', 'VE'],
+                   ['CoB', 'HE'],
+                   ]
+  elif school == 'VBE':
+    school_list = [['VBE', 'HE'],
+                   ['VBE', 'VE'],
+                   ['CoB', 'HE'],
+                   ]
+  else:
+    school_list = [[school, 'HE'],
+                   ['CoB', 'HE'],
+                   ]
+  
+  for school in school_list:
     
     if school[1] == 'VE':
       dash_type = 'dot'
@@ -325,7 +443,7 @@ def create_school_RMIT_graph(
   fig = go.Figure(
     data=traces,
     layout=go.Layout(
-      title=False,
+      title=None,
       showlegend=False,
       legend=dict(
         font=dict(size=10),
@@ -334,6 +452,100 @@ def create_school_RMIT_graph(
       ),
       paper_bgcolor=background,
       plot_bgcolor=background,
+      xaxis=dict(
+        title=None,
+        range=[0, int(end_year) - int(start_year) + 1],
+        tickvals=x,
+        tickfont={'size': 12},
+        showgrid=False,
+        ticktext=xlabels,
+        ticks='outside',
+        tick0=1,
+        dtick=1,
+        ticklen=5,
+        zeroline=True,
+        zerolinewidth=2,
+      ),
+      yaxis=dict(
+        title=ytitle,
+        range=yrange,
+        tickvals=ytickvals,
+        ticktext=yticktext,
+        ticklen=5,
+        tickfont={'size': 12},
+        zeroline=True,
+        zerolinewidth=2,
+        gridcolor=line_col,
+        layer="below traces",
+      ),
+      width=width,
+      height=height,
+      hovermode='closest',
+      margin=dict(b=25, l=60, r=10, t=20),
+      hidesources=True,
+    )
+  )
+  return fig
+
+def create_school_course_mean_graph(
+  df1,
+  measure='gts',
+  start_year=2015, end_year=2018,
+  semester=1,
+  height=600,
+  width=1100,
+  df_cob=None,
+  err=False,
+  xoffset=False):
+  
+  df1[measure] = df1[measure].astype(float)
+  
+  x = [i + 0.5 for i in range(0, (int(end_year) - int(start_year) + 1))]
+  xlabels = ['{}'.format(i) for i in range(int(start_year), int(end_year) + 1)]
+  
+  traces = []
+  offset = -0.09
+  for school in [['ACCT', 'HE'],
+                 ['BITL', 'HE'],
+                 ['EFM', 'HE'],
+                 ['GSBL', 'HE'],
+                 ['MGT', 'HE'],
+                 ['VBE', 'HE'],
+                 ['VBE', 'VE'],
+                 ['CoB', 'HE'],
+                 ]:
+    
+    offset += 0.02
+    
+    if xoffset == False:
+      offset=0
+    
+    if school[1] == 'VE':
+      dash_type = 'dot'
+    else:
+      dash_type = None
+    
+    traces.append(line_trace_school_course_mean_measure(
+      df1,
+      school[0],
+      level=school[1],
+      measure=measure,
+      start_year=start_year, end_year=end_year,
+      semester=semester,
+      dash_type=dash_type,
+      df_cob=df_cob,
+      xoffset=offset,
+      err=err))
+
+  fig = go.Figure(
+    data=traces,
+    layout=go.Layout(
+      title=False,
+      showlegend=False,
+      legend=dict(
+        font=dict(size=10),
+        orientation="h",
+      ),
       xaxis=dict(
         title=False,
         range=[0, int(end_year) - int(start_year) + 1],
@@ -357,7 +569,7 @@ def create_school_RMIT_graph(
         tickfont={'size': 12},
         zeroline=True,
         zerolinewidth=2,
-        gridcolor=line_col,
+        gridcolor=None,
         layer="below traces",
       ),
       width=width,
@@ -368,7 +580,6 @@ def create_school_RMIT_graph(
     )
   )
   return fig
-
 
 def create_CoB_graph(
   df1,
@@ -404,7 +615,7 @@ def create_CoB_graph(
     else:
       dash_type = None
     
-    print(school, color)
+    #print(school, color)
     
     traces.append(line_trace_school_measure(
       df1,
