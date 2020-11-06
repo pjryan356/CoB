@@ -19,10 +19,10 @@ def create_directory(dirName):
 # Create connections
 # create sams engine this is the connection to the oracle database
 
-semester = '2019S1'
+semester = '2020S1'
 semester = input("Input Semester [e.g. 2019S1]: ") ## Input password
 
-folder = 'H:\\Projects\\CoB\\CES\\Courses\\{}\\'.format(semester)
+folder = 'H:\\Projects\\CoB\\CES\\Course Enhancement\\2020 S1\\DatPacks\\{}\\'.format(semester)
 
 for sch in ['ACCT', 'BITL', 'EFM', 'GSBL', 'MGT', 'VBE']:
   

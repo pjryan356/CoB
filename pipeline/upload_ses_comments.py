@@ -128,3 +128,58 @@ for filename in os.listdir(directory):
   else:
     continue
 '''
+
+'''
+# get data from excel doc
+# open template
+directory = 'H:\\Data\\SES\\2019 comments\\'
+survey='SES'
+year=2019
+level='VE'
+semester=''
+#campus
+school_code='VBE'
+#best
+#improve
+
+
+for filename in os.listdir(directory):
+  if filename.endswith(".xls"):
+    print(os.path.join(directory, filename))
+    program_code = filename.split()[0].split('_')[3]
+    df = pd.read_excel(directory + filename,
+                       skiprows=4,
+                       skipfooter=0)
+    df.columns = ['best', 'improve', 'campus']
+    df['survey'] = survey
+    df['year'] = int(year)
+    df['level'] = level
+    df['semester'] = semester
+    df['school_code'] = school_code
+    df['program_code'] = program_code
+
+    df: object = df[[
+      'survey', 'year', 'level', 'semester', 'campus',
+      'school_code', 'program_code',
+      'best', 'improve'
+    ]]
+    print(tabulate(df, headers='keys'))
+    try:
+      df.to_sql(
+        name='tbl_comments_ve',
+        con=postgres_engine,
+        schema='ses',
+        if_exists='append',
+        index=False
+      )
+    except Exception as e:
+      print('comment input failed' + filename)
+      print(e)
+      pass
+    
+    continue
+  else:
+    continue
+'''
+
+

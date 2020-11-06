@@ -30,14 +30,20 @@ from general.db_helper_functions import (
   db_extract_query_to_dataframe
 )
 
-from Course_enhancement_graphs import (
+from course_pack.Course_enhancement_graphs import (
   line_graph_measure_surveys,
   line_graph_gtsq_surveys,
-  line_graph_crse_prg,
   generate_ces_pd_table,
   )
 
-from Course_enhancement_functions import (
+from Program_graphs import (
+  line_graph_crse_prg,
+  line_graph_prg_crses,
+  line_graph_crse_prg_enrol,
+  line_graph_crse_prg_current
+  )
+
+from course_pack.Course_enhancement_functions import (
   get_term_name,
   get_course_pop,
   get_gts_questions
@@ -53,13 +59,50 @@ This script is designed to a Program level CES Data Pack.
 # Set parameter values with input prompts or go with preset values (input prompt)
 # Get Program Code
 #program_code = input("Program Code: ") ## Input password
-program_code_test = 'BP255'
+program_code_test = [
+  'MC192',
+  'BP027',
+  'BP253',
+  'BP030',
+  'BP129',
+  'BP134',
+  'BP138',
+  'BP141',
+  'BP143',
+  'BP217',
+  'BP251',
+  'BP252',
+  'BP254',
+  'BP255',
+  'BP276',
+  'BP308',
+  'BP314',
+  'BP313',
+  'BP324',
+  'MC161',
+  'MC162',
+  'MC194',
+  'MC196',
+  'MC197',
+  'MC198',
+  'MC199',
+  'MC200',
+  'MC201',
+  'MC205',
+  'MC260',
+  'MC263',
+  'MC276',]
+  
+  
+#program_code_test = 'BP253'
 start_year = 2016
-end_year = 2019
+end_year = 2020
 semester = 1
+
 
 # Setup app
 app = dash.Dash(__name__)
+app.css.config.serve_locally = True
 app.scripts.config.serve_locally = True
 
 ''' ------------------- Add a css file to configure settings and layouts-------------'''
@@ -76,7 +119,6 @@ app.scripts.config.serve_locally = True
 '''--------------------------------- Connect to Database  ----------------------------'''
 # create postgres engine this is the connection to the postgres database
 postgres_pw = input("Postgres Password: ")
-
 postgres_user = 'pjryan'
 postgres_host = 'localhost'
 postgres_dbname = 'postgres'
@@ -91,7 +133,7 @@ postgres_con, postgres_cur = connect_to_postgres_db(con_string)
 
 '''------------------------Get Images---------------------'''
 # header image
-image_filename = 'C:\\Peter\\CoB\\logos\\L&T_Transparent_200.png'  # replace with your own image
+image_filename = 'C:\\Peter\\CoB\\logos\\Logo_COBL_transparent_200.png'  # replace with your own image
 logo = base64.b64encode(open(image_filename, 'rb').read())
 
 # ces scale image (3 explanation)
@@ -173,6 +215,8 @@ def get_course_program_ces_data(course_list, program_list, start_year, end_year,
         '     reliability, \n' \
         '     round(gts, 1) AS gts, round(gts_mean, 1) AS gts_mean, \n' \
         '     round(osi, 1) AS osi, round(osi_mean, 1) AS osi_mean, \n' \
+        '     round(gts1, 1) AS gts1, round(gts2, 1) AS gts2, round(gts3, 1) AS gts3, \n' \
+        '     round(gts4, 1) AS gts4, round(gts5, 1) AS gts5, round(gts6, 1) AS gts6, \n' \
         '     population::int, osi_count, gts_count \n' \
         '   FROM {0}.{1} \n' \
         "   WHERE course_code IN {2} \n" \
@@ -209,6 +253,7 @@ def get_prg_ces_data(program_list, start_year, end_year, cur, tbl='vw135_program
         "   year, semester, level, \n" \
         "   program_code, \n" \
         '   population::int, reliability, \n' \
+        '   osi_count, \n' \
         '   round(gts::numeric, 1) AS gts, round(gts_mean::numeric, 1) AS gts_mean, \n' \
         '   round(osi::numeric, 1) AS osi, round(osi_mean::numeric, 1) AS osi_mean, \n' \
         '   round(gts1::numeric, 1) AS gts1, round(gts2::numeric, 1) AS gts2, round(gts3::numeric, 1) AS gts3, \n' \
@@ -224,7 +269,6 @@ def get_prg_ces_data(program_list, start_year, end_year, cur, tbl='vw135_program
                   end_year)
   return db_extract_query_to_dataframe(qry, cur, print_messages=False)
 
-
 def get_prg_crse_data(program_list, cur):
   qry = " SELECT * \n" \
         " FROM programs.tbl_plan_course_structure \n" \
@@ -234,7 +278,7 @@ def get_prg_crse_data(program_list, cur):
 
 '''-------------------------------------------- Create Dataframes -------------------------------------'''
 
-df_prg_crse = get_prg_crse_data([program_code_test], cur=postgres_cur)
+df_prg_crse = get_prg_crse_data(program_code_test, cur=postgres_cur)
 
 df_prg = df_prg_crse[['program_code', 'plan_code', 'program_name', 'program_level', 'school_abbr', 'campus']].drop_duplicates(['program_code', 'plan_code', 'campus', 'program_name', 'school_abr', 'program_level', 'school_abbr', 'campus'])
 df_prg = df_prg.loc[df_prg['campus'] == 'AUSCY']
@@ -287,259 +331,331 @@ def create_program_options(df1, school=None):
   options.insert(0, {'label': 'All', 'value': None})
   return options
 
-
 def make_program_level_page(program_code, level, df1_prg_ces, gts_list):
   # First Page - CES quantitative data
-  div = html.Div(
+  child = [
+    # First Row - OSI & GTS overtime graph and CES overtime table
+    html.Div(
+      [
+        # OSI & GTS Graph
+        html.Div(
+          [
+            dcc.Graph(
+              id='gts-graph',
+              figure=line_graph_measure_surveys(
+                df1_prg_ces,
+                program_code,
+                ['gts', 'osi'],
+                start_year, end_year,
+                semester=None,
+                width=540,
+                height=318
+              ),
+              style={'margin': 0,
+                     },
+            )
+          ],
+          className='six columns',
+          style={
+            'width': '50%',
+            'margin-left': 0,
+            'margin-right': 0,
+            'border': 'solid',
+          }
+        ),
+        # CES Table
+        html.Div(
+          children=[
+            dcc.Graph(
+              id='ces-table',
+              figure=generate_ces_pd_table(df1_prg_ces,
+                                           program_code,
+                                           width=530,
+                                           height=310),
+              style={
+                'margin': 0,
+                'margin-top': 4,
+                'margin-bottom': 4,
+                'margin-left': 10,
+                'margin-right': 10,
+              },
+            )
+          ],
+          className='six columns',
+          style={
+            'width': '50%',
+            'margin': 0,
+            'margin-left': 0,
+            'margin-right': 0,
+            'border': 'solid',
+          },
+        ),
+      ],
+      className='twelve columns',
+      style={},
+    ),
+    # Second Row - Individual GTS questions graph and CES questions list
+    html.Div(
+      [
+        # Individual GTS questions overtime graph
+        html.Div(
+          [
+            dcc.Graph(
+              id='gtsi-graph',
+              figure=line_graph_gtsq_surveys(
+                df1_prg_ces,
+                program_code,
+                start_year,
+                end_year, semester=None,
+                acad_career=level,
+                width=540,
+                height=318),
+              style={'margin': 0},
+            )
+          ],
+          className='six columns',
+          style={'width': '50%',
+                 'margin': 0,
+                 'margin-right': 0,
+                 'border': 'solid',
+                 },
+        ),
+        # CES question explanations
+        html.Div(
+          [
+            html.P([dcc.Markdown('**OSI:** {}'.format('Overall I am satisfied with the quality of this course'))],
+                   style={'margin-top': 10,
+                          'margin-bottom': 0,
+                          'margin-left': 5,
+                          'font-size': 16}),
+            
+            html.P(['GTS Questions'],
+                   style={'margin-top': 5,
+                          'margin-bottom': 0,
+                          'margin-left': 5,
+                          'font-size': 16,
+                          'font-weight': 'bold'}),
+            html.P(['Q1: {}'.format(gts_list[0])], style={'margin-top': 0,
+                                                          'margin-bottom': 0,
+                                                          'margin-left': 5,
+                                                          'font-size': 16}),
+            html.P(['Q2: {}'.format(gts_list[1])], style={'margin-top': 0,
+                                                          'margin-bottom': 0,
+                                                          'margin-left': 5,
+                                                          'font-size': 16}),
+            html.P(['Q3: {}'.format(gts_list[2])], style={'margin-top': 0,
+                                                          'margin-bottom': 0,
+                                                          'margin-left': 5,
+                                                          'font-size': 16}),
+            html.P(['Q4: {}'.format(gts_list[3])], style={'margin-top': 0,
+                                                          'margin-bottom': 0,
+                                                          'margin-left': 5,
+                                                          'font-size': 16}),
+            html.P(['Q5: {}'.format(gts_list[4])], style={'margin-top': 0,
+                                                          'margin-bottom': 0,
+                                                          'margin-left': 5,
+                                                          'font-size': 16}),
+            html.P(['Q6: {}'.format(gts_list[5])], style={'margin-top': 0,
+                                                          'margin-bottom': 0,
+                                                          'margin-left': 5,
+                                                          'font-size': 16}),
+            html.P([dcc.Markdown('{}'.format(gts_list[6]))],
+                   style={'margin-top': 5,
+                          'margin-left': 5,
+                          'font-size': 16}),
+
+    
+          ],
+          className='six columns',
+          style={'width': '50%',
+                 'margin-bottom': 0,
+                 'margin-left': 0,
+                 'margin-right': 0,
+                 'font-size': 16,
+                 'border': 'solid',
+                 'height': 320
+                 }
+        ),
+      ],
+      className='twelve columns',
+      style={
+        'margin-bottom': 0,
+        'margin-top': 0,
+        'margin-left': 0,
+        'margin-right': 0}
+    )
+  ]
+
+  return child
+
+def make_course_div(crse, course_code, program_code):
+
+  height = 330
+  # create 4 charts
+  # CRSE vs CRSE(PRG) GTS Graph
+  crse_div = html.Div(
     [
-      # First Row - OSI & GTS overtime graph and CES overtime table
-      html.Div(
-        [
-          # OSI & GTS Graph
-          html.Div(
-            [
-              dcc.Graph(
-                id='gts-graph',
-                figure=line_graph_measure_surveys(
-                  df1_prg_ces,
-                  program_code,
-                  ['gts', 'osi'],
-                  start_year, end_year,
-                  semester=None,
-                  width=540,
-                  height=320
-                ),
-                style={'margin': 0,
-                       },
-              )
-            ],
-            className='six columns',
-            style={
-              'width': '50%',
-              'margin-left': 0,
-              'margin-right': 0,
-            }
-          ),
-          # CES Table
-          html.Div(
-            children=[
-              dcc.Graph(
-                id='ces-table',
-                figure=generate_ces_pd_table(df1_prg_ces,
-                                             program_code,
-                                             width=530,
-                                             height=310),
-                style={
-                  'margin': 0,
-                  'margin-top': 5,
-                  'margin-bottom': 5,
-                  'margin-left': 10,
-                  'margin-right': 10,
-                },
-              )
-            ],
-            className='six columns',
-            style={
-              'width': '50%',
-              'margin': 0,
-              'margin-left': 0,
-              'margin-right': 0,
-            },
-          ),
-        ],
-        className='row',
-        style={
-               'border': 'solid',
-               'margin-top': 5,
-        },
-      ),
-      # Second Row - Individual GTS questions graph and CES questions list
-      html.Div(
-        [
-          # Individual GTS questions overtime graph
-          html.Div(
-            [
-              dcc.Graph(
-                id='gtsi-graph',
-                figure=line_graph_gtsq_surveys(
-                  df1_prg_ces,
-                  program_code,
-                  start_year,
-                  end_year, semester=None,
-                  acad_career=level,
-                  width=530,
-                  height=320),
-                style={'margin': 0,
-                       },
-              )
-            ],
-            className='six columns',
-            style={'width': '50%',
-                   'margin': 0,
-                   'margin-right': 0
-                   },
-          ),
-          # CES question explanations
-          html.Div(
-            [
-              html.P(['GTS Questions'],
-                     style={'margin': 0,
-                            'font-weight': 'bold'}),
-              html.P(['Q1: {}'.format(gts_list[0])], style={'margin': '0'}),
-              html.P(['Q2: {}'.format(gts_list[1])], style={'margin': '0'}),
-              html.P(['Q3: {}'.format(gts_list[2])], style={'margin': '0'}),
-              html.P(['Q4: {}'.format(gts_list[3])], style={'margin': '0'}),
-              html.P(['Q5: {}'.format(gts_list[4])], style={'margin': '0'}),
-              html.P(['Q6: {}'.format(gts_list[5])], style={'margin': '0'}),
-              html.P([dcc.Markdown('{}'.format(gts_list[6]))],
-                     style={'margin-top': '5'}),
-              html.P([dcc.Markdown('**OSI:** {}'.format('Overall I am satisfied with the quality of this course'))],
-                     style={'margin-top': '5'}),
-      
-            ],
-            className='six columns',
-            style={'width': '50%',
-                   'margin-top': 10,
-                   'margin-left': 0,
-                   'margin-right': 0,
-                   'margin-bottom': 0}
-          ),
-        ],
-        className='row',
-        style={'border': 'solid',
-               'margin-top': 5}
+      dcc.Graph(
+        id='crse-gts-graph-{}'.format(course_code),
+        figure=line_graph_crse_prg(
+          df_crse_ces,
+          df_crse_prg_ces,
+          course_code,
+          program_code,
+          'gts',
+          start_year, end_year,
+          semester=None,
+          width=545,
+          height=height),
+        style={'margin': 0},
       )
     ],
-    className='row',
-    style={'width': '29.5cm',
-           'height': '18.6 cm',
-           'margin-left': 0,
-           'margin-right': 0,
-           'margin-bottom': 0,
-           'margin-top': 0,
+    className='six columns',
+    style={'width': '50%',
+           'margin': 0,
+           'border': 'solid'
            }
   )
-  return div
+  
+  # PRG Core Courses GTS Graph
+  prg_crses_div = html.Div(
+    [
+      dcc.Graph(
+        id='crses-gts-graph-{}'.format(course_code),
+        figure=line_graph_prg_crses(
+          df_prg_ces,
+          df_crse_prg_ces,
+          course_code,
+          program_code,
+          'gts',
+          start_year, end_year,
+          semester=None,
+          width=545,
+          height=height),
+        style={'margin': 0},
+      )
+    ],
+    className='six columns',
+    style={'width': '50%',
+           'margin': 0,
+           'border': 'solid'
+           }
+  )
+  
+  # Enrolments Graph
+  enrol_div = html.Div(
+    [
+      dcc.Graph(
+        id='enrol-graph-{}'.format(course_code),
+        figure=line_graph_crse_prg_enrol(
+          df_crse_ces,
+          df_crse_prg_ces,
+          course_code,
+          program_code,
+          start_year, end_year,
+          semester=None,
+          width=545,
+          height=height),
+        style={'margin': 0,
+               'margin-bottom': 1,
+               },
+      )
+    ],
+    className='six columns',
+    style={'width': '50%',
+           'margin': 0,
+           'border': 'solid'
+           }
+  )
 
-def make_course_div(course_code):
-  # Side by side GTS & OSI graphs
+  current_div= html.Div(
+    [
+      dcc.Graph(
+        id='current-graph-{}'.format(course_code),
+        figure=line_graph_crse_prg_current(
+          df_prg_ces,
+          df_crse_ces,
+          df_crse_prg_ces,
+          course_code,
+          program_code,
+          year=2019,
+          semester=semester,
+          width=545,
+          height=height),
+      style={'margin': 0,
+             'margin-bottom': 1,},
+      )
+    ],
+    className='six columns',
+    style={'width': '50%',
+           'margin': 0,
+           'border': 'solid'
+           }
+  )
+  
   div = html.Div(
     [
-      # GTS Graph
+      # Row1
       html.Div(
         [
-          dcc.Graph(
-            id='gts-graph-{}'.format(course_code),
-            figure=line_graph_crse_prg(
-              df_prg_ces,
-              df_crse_ces,
-              df_crse_prg_ces,
-              df_crses,
-              course_code,
-              'gts',
-              start_year, end_year,
-              semester=None,
-              width=545,
-              height=320),
-            style={'margin': 0},
-          )
+          crse_div,
+          prg_crses_div
         ],
-        className='six columns',
-        style={'width': '50%',
-               'margin': 0
-               }
+        className='twelve columns ',
       ),
-      # OSI Graph
+      # Row2
       html.Div(
         [
-          dcc.Graph(
-            id='osi-graph-{}'.format(course_code),
-            figure=line_graph_crse_prg(
-              df_prg_ces,
-              df_crse_ces,
-              df_crse_prg_ces,
-              df_crses,
-              course_code,
-              'osi',
-              start_year, end_year,
-              semester=None,
-              width=545,
-              height=320),
-            style={'margin': 0},
-          )
+          enrol_div,
+          current_div
         ],
-        className='six columns',
-        style={'width': '50%',
-               'margin': 0
-               }
       ),
     ],
-    className='row',
-    style={'border': 'solid',
-           }
+    className='twelve columns',
   )
+  
   return div
 
-def make_program_year_level_page(program_code, year_level):
+def make_program_year_level_page(program_code, year_level, limit=None):
   # First Page - CES quantitative data
   prg = df_prg.loc[(df_prg['program_code'] == program_code)].reset_index(drop=True)
   df_crses_year = df_crses.loc[(df_crses['ams_block_nbr'] == year_level)].reset_index(drop=True)
 
   crse_list = df_crses_year['course_code'].drop_duplicates().tolist()
   
+  if limit == None:
+    limit = len(crse_list)
   # Course CES quantitative data
   sub_div = []
-  for i_crse in range(0, len(crse_list), 2):
+  for i_crse in range(0, limit):
     try:
       crse = df_crses_year.loc[df_crses_year['course_code'] == crse_list[i_crse]]
     except:
       raise
     
-    if i_crse + 1 < len(crse_list):
-      try:
-        temp = \
-          html.Div(
-              [
-                make_year_header_div(prg, crse['clist_name'].tolist()[0]),
-                make_course_div(crse_list[i_crse]),
-                make_course_div(crse_list[i_crse+1]),
-              ],
-              style={'width': '29.5cm',
-                     'height': '20.4cm',
-                     'top-margin': 0,
-                     'bottom-margin': 0,
-                     'right-margin': 50,
-                     'left-margin': 50,
-                     }
-              )
-        sub_div.append(temp)
-        
-      except Exception as e:
-        print(e, e.args)
-        pass
-
-    else:
-      try:
-        temp = \
-          html.Div(
-            [
-              make_year_header_div(prg, crse['clist_name'].tolist()[0]),
-              make_course_div(crse_list[i_crse]),
-            ],
-            style={'width': '29.5cm',
-                   'height': '20.5cm',
-                   'top-margin': 0,
-                   'bottom-margin': 0,
-                   'right-margin': 50,
-                   'left-margin': 50,
-                   'backgroundColor': rc.RMIT_Blue
-                   }
-          )
-        sub_div.append(temp)
+    try:
       
-      except Exception as e:
-        print(e.message, e.args)
-        pass
+      temp = \
+        html.Div(
+          [
+            make_course_header_div(prg, crse),
+            make_course_div(crse, crse_list[i_crse], program_code),
+          ],
+          className='twelve columns',
+          style={'width': '29.5cm',
+                 'height': '20.32cm',
+                 'top-margin': 0,
+                 'bottom-margin': 0,
+                 'right-margin': 50,
+                 'left-margin': 50,
+                 'border': 'solid'
+                 }
+        )
+      sub_div.append(temp)
+        
+    except Exception as e:
+      print(e, e.args)
+      pass
       
   return html.Div(children=sub_div)
 
@@ -568,17 +684,31 @@ def make_program_pack(program_code):
   # create Data pack in correct layout
   child = [
     # First Page - CES quantitative data
-    make_program_level_page(program_code, level, df1_prg_ces, gts_list),
-  
-    # Second Page - Additional Information
+    # height short because of selector box
     html.Div(
-      children=make_addtional_info(),
+      children=make_program_level_page(program_code, level, df1_prg_ces, gts_list),
+      className='twelve columns',
       style={'width': '29.5cm',
-             'height': '20.5cm',
+             'height': '18.6 cm',
              'top-margin': 0,
              'bottom-margin': 0,
              'right-margin': 50,
              'left-margin': 50,
+             'border': 'solid'
+             },
+    ),
+  
+    # Second Page - Additional Information
+    html.Div(
+      children=make_addtional_info(),
+      className='twelve columns',
+      style={'width': '29.5cm',
+             'height': '20.3cm',
+             'top-margin': 0,
+             'bottom-margin': 0,
+             'right-margin': 50,
+             'left-margin': 50,
+             'border': 'solid'
              },
     ),
     # Add Year Level Pages - CES data
@@ -648,18 +778,22 @@ def make_addtional_info():
                          'margin-right': 10,
                          },
                   ),
-                html.P(['The OSI and GTS questions are measured against a 5-point scale ("1: Strongly Disagree to '
-                        '"5: Strongly Agree").'],
-                       style={'textAlign': 'left',
-                              'font-size': 16,
-                              'color': rc.RMIT_Black,
-                              'font-weight': 'normal',
-                              'margin-bottom': 0,
-                              'margin-left': 10,
-                              'margin-right': 10,
-                              },
-                       ),
-
+                html.P(
+                  [
+                    dcc.Markdown(
+                      'The OSI and GTS questions are measured against a 5-point scale  \n'
+                      '("1: Strongly Disagree to "5: Strongly Agree").')
+                  ],
+                  style={'textAlign': 'left',
+                         'font-size': 16,
+                         'color': rc.RMIT_Black,
+                         'font-weight': 'normal',
+                         'margin-bottom': 0,
+                         'margin-left': 10,
+                         'margin-right': 10,
+                         },
+                ),
+                
                 html.P(['The GTS percent agree is calculated by taking the sum of student responses that'
                         ' "4: Agree" or "5: Strongly Agree" and expressing it as a percentage of all GTS responses.'],
                        style={'textAlign': 'left',
@@ -684,7 +818,7 @@ def make_addtional_info():
                        ),
                 html.Img(
                   src='data:image/png;base64,{}'.format(ces_scale_image.decode()),
-                  style={'height': '120px',
+                  style={'height': '160px',
                          'width': '400px',
                          'align': 'middle',
                          'vertical-align': 'middle',
@@ -745,9 +879,8 @@ def make_addtional_info():
                              'margin-left': 0},
                     ),
                     html.P(
-                      [dcc.Markdown('The Course/Program scores (Red) are calculated using all student responses'
-                                    ' for the Course, from students enrolled in the Program. The number of student'
-                                    ' responses is displayed.')],
+                      [dcc.Markdown('The Course(Program) scores (Red) are calculated using all student responses'
+                                    ' for the Course, where the students are also enrolled in the Program.')],
                       style={'textAlign': 'left',
                              'font-size': 16,
                              'color': rc.RMIT_Black,
@@ -758,7 +891,7 @@ def make_addtional_info():
                     
                     html.P(
                       [dcc.Markdown('The Course scores (Dark Blue) are calculated using all student responses'
-                                    ' for the Course, regardless of the Program.')],
+                                    ' for the Course, regardless of which Program the student is enrolled in.')],
                       style={'textAlign': 'left',
                              'font-size': 16,
                              'color': rc.RMIT_Black,
@@ -781,8 +914,9 @@ def make_addtional_info():
                              },
                     ),
                     html.P(
-                      [dcc.Markdown('The Program scores (Blue) are calculated using all responses,'
-                                    ' regardless of the Course, from any student enrolled in the Program.'
+                      [dcc.Markdown('The Program scores (Blue) are calculated using all responses'
+                                    ' from any student enrolled in the Program. The responses can be from'
+                                    ' any course.'
                                     ' This information is the same as display in the Program plots on Page One')],
                       style={'textAlign': 'left',
                              'font-size': 16,
@@ -814,12 +948,9 @@ def make_addtional_info():
       ]
   return child
   
-def make_year_header_div(prg, list_name):
+def make_course_header_div(prg, crse):
   # creates course header with pre defined logo
   try:
-    code = prg.iloc[0]['program_code']
-    name = prg.iloc[0]['program_name']
-    school = prg.iloc[0]['school_abbr']
     div = html.Div(
       [
         # Left - Headings
@@ -827,7 +958,8 @@ def make_year_header_div(prg, list_name):
           [
             # Heading
             html.Div(
-              children='Program Pack',
+              children='{}: {}'.format(prg.iloc[0]['program_code'],
+                                       prg.iloc[0]['program_name']),
               style={'textAlign': 'left',
                      'font-size': 18,
                      'color': rc.RMIT_Black,
@@ -839,7 +971,7 @@ def make_year_header_div(prg, list_name):
             html.Div(
               [
                 html.P(
-                  children='{}: {}'.format(code, name),
+                  children='{}'.format(crse.iloc[0]['clist_name']),
                   style={'textAlign': 'left',
                          'font-size': 16,
                          'color': rc.RMIT_Black,
@@ -849,7 +981,8 @@ def make_year_header_div(prg, list_name):
                          },
                 ),
                 html.P(
-                  children='{}'.format(list_name),
+                  children='{}: {}'.format(crse.iloc[0]['course_code'],
+                                           crse.iloc[0]['course_name']),
                   style={'textAlign': 'left',
                          'font-size': 16,
                          'color': rc.RMIT_Black,
@@ -873,10 +1006,12 @@ def make_year_header_div(prg, list_name):
         html.Div(
           [
             html.P(
-              children=['Course (Program): Students enrolled in the Course and Program'],
+              children=['{1}({0}): The responses for {1} students enrolled in {0}'
+                        ''.format(prg.iloc[0]['program_code'], crse.iloc[0]['course_code'])
+                        ],
               style={'textAlign': 'left',
                      'padding-left': '10px',
-                     'font-size': 18,
+                     'font-size': 15,
                      'color': rc.RMIT_White,
                      'font-weight': 'normal',
                      'margin-top': 1,
@@ -887,10 +1022,11 @@ def make_year_header_div(prg, list_name):
             ),
 
             html.P(
-              children=['Course: Students enrolled in the Course, from any Program'],
+              children=['{0}(All): The responses for {0} students enrolled in any program'
+                        ''.format(crse.iloc[0]['course_code'])],
               style={'textAlign': 'left',
                      'padding-left': '10px',
-                     'font-size': 18,
+                     'font-size': 15,
                      'color': rc.RMIT_White,
                      'font-weight': 'normal',
                      'margin-top': 0,
@@ -900,10 +1036,12 @@ def make_year_header_div(prg, list_name):
                      'background-color': rc.RMIT_DarkBlue},
             ),
             html.P(
-              children=['Program: Students enrolled in the Program, from any Course'],
+              children=['{0}: The responses for all courses from students enrolled in {0}'
+                        ''.format(prg.iloc[0]['program_code'])
+                        ],
               style={'textAlign': 'left',
                      'padding-left': '10px',
-                     'font-size': 18,
+                     'font-size': 15,
                      'color': rc.RMIT_White,
                      'font-weight': 'normal',
                      'margin-top': 2,
@@ -944,8 +1082,9 @@ def make_header_div_selector():
            'border': 'solid',
            'top-margin': 0,
            'bottom-margin': 0,
-           'right-margin': 0,
-           'left-margin': 0},
+           'left-margin': 50,
+           'right-margin': 50
+           },
     children=
     [
       # Left - Dropdown menus
@@ -1031,12 +1170,21 @@ def make_header_div_selector():
 # Create app layout
 app.layout = html.Div(
   [
+    html.Link(
+      rel='stylesheet',
+      href='/static/bWLwgP.css'
+    ),
+    html.Link(
+      rel='stylesheet',
+      href='/static/remove_undo.css'
+    ),
     make_header_div_selector(),
     html.Div(
       id='program-pack'
     ),
   ]
 )
+
 
 '''----------------------- Main Graph Controlled ----------------------------------'''
 '''---------------------- Options updates -----------------------------'''
@@ -1061,20 +1209,6 @@ def create_page(program_code):
     return make_program_pack(program_code)
 
 
-# Upload css formats
-css_directory = 'H:\\Data\\CoB Database\\pipeline\\static\\'
-stylesheets = ['bWLwgP.css', 'remove_undo.css']
-
-@app.server.route('/<stylesheet>')
-def serve_stylesheet(stylesheet):
-  if stylesheet not in stylesheets:
-    raise Exception('"{}" is excluded from the allowed static files'.format(stylesheet))
-  return flask.send_from_directory(css_directory, stylesheet)
-
-
-for stylesheet in stylesheets:
-  app.css.append_css({"external_url": "{}".format(stylesheet)})
-
 if __name__ == '__main__':
-  app.run_server(port=8050, host='127.0.0.2', debug=False)
-  
+  app.run_server(port=8050, host='127.0.0.1', debug=False)
+

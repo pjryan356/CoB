@@ -149,3 +149,57 @@ def convert_list_string_for_sql(list1):
   txt = txt[:-2]
   txt += ') '
   return txt
+
+def get_term_category(location, semester=None):
+  if semester != None:
+    if location == 'MELB':
+      return [current_semester]
+    if location == 'SBM':
+      return [current_semester+4]
+    if location == 'SIM':
+      if semester == 1:
+        return[5]
+      if semester == 2:
+        return [7]
+    else:
+      print('Selection not available')
+      return None
+
+  if semester == None:
+    if location == 'MELB':
+      return [1, 2]
+    if location == 'SBM':
+      return [5, 6, 7]
+    if location == 'SIM':
+      return [5, 7]
+    else:
+      print('Selection not available')
+      return None
+
+
+def get_term_code_ends(location, semester=None, level='VE'):
+  if location == 'MELB':
+    if level == 'VE':
+      x = ['05', '45']
+    if level == 'HE':
+      x = ['10', '50']
+  
+  if location == 'SIM':
+    x = ['20', '60']
+  
+  if location in ['SBM', 'VN']:
+    x = ['91', '92', '93']
+  
+  if location in ['CSI', 'SUIBE']:
+    x = ['08', '48', '20', '30', '60']
+  
+  try:
+    if semester == None:
+      return x
+    
+    else:
+      return [x[semester - 1]]
+  
+  except:
+    print('Selection not available')
+    return None

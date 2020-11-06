@@ -5,6 +5,7 @@ import pandas as pd
 import openpyxl
 import datetime as dt
 import shutil
+from tabulate import tabulate
 
 import sys
 sys.path.append('c:\\Peter\\GitHub\\CoB\\')
@@ -68,7 +69,7 @@ FROM (
       t2.acad_org AS school_code
 
     FROM PS_CLASS_TBL t2
-    WHERE t2.acad_group = 'BUS' AND substr(t2.strm,3,2)={1} AND enrl_tot > 0 AND location = 'CSI'
+    WHERE t2.acad_group = 'BUS' AND t2.strm = '{1}' AND enrl_tot > 0 AND location = 'CSI'
     ) cls
   INNER JOIN (
     SELECT DISTINCT
@@ -138,6 +139,7 @@ INNER JOIN (
 GROUP BY cls.course_code, enrl.term_code, term.term_name
 ORDER BY enrl.term_code DESC
   '''.format(st_term, term_code, course_code, st_year, term_txt)
+  print(qry)
   return(qry)
 
 def get_term_category(location, semester=None):
@@ -207,33 +209,27 @@ sams_engine = return_sams_engine(password_str=password_str)
 
 # Get current semester information
 current_year=2019
-#current_year = int(input("Current year: "))
-
-current_semester=1
-#current_semester = int(input("Current semester (1 or 2 or 3): "))
+current_semester=2
 
 location = 'CSI'
-
+term_code_final = '1948'
 equivalent_semesters = False
-#equivalent_semesters = bool(input("Use equivalent semester (True or False): "))
-
 st_year=2015
-#st_year = int(input("Earliest Year: "))
 
 sheet_pw = 'ADG'
-#sheet_pw = input("Select Password: ")
-
 
 #term_cat = get_term_category(location, current_semester)
 #term_code = get_term_code(location, current_semester)
-term_code = ['08']
+
 
 start = dt.datetime.now()
 # Get all courses
-df_courses = pd.read_sql(sql=get_all_bus_courses(current_year, term_code[0]), con=sams_engine)
+df_courses = pd.read_sql(sql=get_all_bus_courses(current_year, term_code_final), con=sams_engine)
 
+print(tabulate(df_courses, headers='keys'))
 # Iterate through courses
 for i_course, r_course in df_courses.iterrows():
+  
   print(r_course['course_code'])
   # get course data from sams
   if equivalent_semesters:
@@ -251,8 +247,10 @@ for i_course, r_course in df_courses.iterrows():
   except:
     print(sams_qry)
   
+  print(tabulate(df, headers='keys'))
+  print('df')
   # open template
-  directory = 'H:\\Projects\\CoB\\Course_Assessment_Moderation\\test2\\'
+  directory = 'H:\\Projects\\CoB\\Course_Assessment_Moderation\\{}S{}\\'.format(current_year, current_semester)
   template = 'grade_distribution_template.xlsx'
   wb = openpyxl.load_workbook(directory+template)
   sheet = wb['data']
@@ -283,5 +281,4 @@ for i_course, r_course in df_courses.iterrows():
   if i_course%10 == 0:
     print('{} courses in {} seconds'.format(i_course, (dt.datetime.now() - start).seconds))
 
-print('{} courses in {} seconds'.format(len(df_courses), (dt.datetime.now() - start).seconds))
 

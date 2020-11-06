@@ -5,6 +5,7 @@ import pandas as pd
 import openpyxl
 import datetime as dt
 import shutil
+from tabulate import tabulate
 
 import sys
 sys.path.append('c:\\Peter\\GitHub\\CoB\\')
@@ -18,27 +19,16 @@ password_str = input("SAMS Password: ") ## Input password
 sams_engine = return_sams_engine(password_str=password_str)
 
 # Get current semester information
-current_year = 2019
-#current_year = int(input("Current year: "))
+current_year = 2020
+current_semester = 1
 
-current_semester = 2
-#current_semester = int(input("Current semester (1 or 2 or 3): "))
-
-#location = input("Location (MELB, SBM, SIM): ")
-#level = input("Level (VE, HE): ")
-#term_code_final = input("Final term code: ")
-location = 'MELB'
-level = 'VE'
-term_code_final = '1945'
+location = 'SIM'
+level = 'HE'
+term_code_final = '2020'
 
 equivalent_semesters = False
-#equivalent_semesters = bool(input("Use equivalent semester (True or False): "))
-
-st_year = 2015
-#st_year = int(input("Earliest Year: "))
-
+st_year = 2016
 sheet_pw = 'ADG'
-#sheet_pw = input("Select Password: ")
 
 
 def get_school_name(school_code):
@@ -68,18 +58,6 @@ def list_to_text(obList):
   txt = txt[:-1] + ")"
   return txt
 
-def copy_rename(old_file_name, new_file_name):
-  import os
-  
-  src_dir = os.curdir
-  dst_dir = os.path.join(os.curdir, "subfolder")
-  src_file = os.path.join(src_dir, old_file_name)
-  shutil.copy(src_file, dst_dir)
-  
-  dst_file = os.path.join(dst_dir, old_file_name)
-  new_dst_file_name = os.path.join(dst_dir, new_file_name)
-  os.rename(dst_file, new_dst_file_name)
-
 def get_all_bus_courses(term_year, term_code):
   qry = '''
 SELECT DISTINCT
@@ -94,7 +72,8 @@ FROM (
       t2.STRM AS term_code,
       t2.SUBJECT || t2.CATALOG_NBR AS course_code,
       t2.DESCR AS course_name,
-      t2.acad_org AS school_code
+      t2.acad_org AS school_code,
+      t2.crse_id
 
     FROM PS_CLASS_TBL t2
     WHERE t2.acad_group = 'BUS' AND t2.strm={1} AND enrl_tot > 0
@@ -106,6 +85,7 @@ FROM (
     FROM PS_TERM_TBL t3
     WHERE acad_year = {0}
     ) term ON (cls.term_code = term.term_code)
+
 '''.format(term_year, term_code)
   print(qry)
   return qry
@@ -246,13 +226,17 @@ term_code = get_term_code(location, current_semester)
 start = dt.datetime.now()
 # Get all courses
 df_courses = pd.read_sql(sql=get_all_bus_courses(current_year, term_code_final), con=sams_engine)
-print (len(df_courses))
+print(tabulate(df_courses, headers='keys'))
+
+## up to 200
 
 # Iterate through courses
 for i_course, r_course in df_courses.iterrows():
-  #if i_course > 10:
+  ## While testin new semester turn this on
+  #if i_course > 4:
   #  break
-  # get course data from sams
+  
+  ## get course data from sams
   if equivalent_semesters:
     sams_qry = get_course_grade_distribution(course_code=r_course['course_code'],
                                              term_code=r_course['term_code'],
@@ -270,7 +254,7 @@ for i_course, r_course in df_courses.iterrows():
     print(sams_qry)
   
   # open template
-  directory = 'H:\\Projects\\CoB\\Course_Assessment_Moderation\\2019S2\\'
+  directory = 'H:\\Projects\\CoB\\Course_Assessment_Moderation\\{}S{}\\'.format(current_year, current_semester)
   template = 'grade_distribution_template.xlsx'
   wb = openpyxl.load_workbook(directory+template)
   sheet = wb['data']
@@ -295,12 +279,11 @@ for i_course, r_course in df_courses.iterrows():
   # protect sheet
   sheet.protection.set_password('{}'.format(sheet_pw))
   # Save sheet
-  filename = '{1}\\{0}_{2}_{3}_grade_distribution.xlsx'.format(school_name, location, r_course['course_code'], r_course['term_name'])
+  filename = '{1}\\{0} {2} {3} grade distribution.xlsx'.format(school_name, location, r_course['course_code'], r_course['term_name'])
   print(directory+filename)
   wb.save(directory+filename)
   del df
   if i_course%10 == 0:
     print('{} courses in {} seconds'.format(i_course, (dt.datetime.now() - start).seconds))
 
-print('{} courses in {} seconds'.format(i_course, (dt.datetime.now() - start).seconds))
 

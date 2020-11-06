@@ -25,10 +25,10 @@ postgres_con = postgres_engine.connect()
 
 
 # Inputs
-directory = 'C:\\Users\\e35137\\Downloads\\' #input("Directory: ")
-filename = 'RRate20191024.xlsx' #input("Filename: ")
-date_tbl_name = 'tbl_class_responses' #input("File_date: ")
-
+directory = 'H:\\Data\\CoB Database\\CES\\Response Rate\\2020\\' #input("Directory: ")
+filename = 'Wk3 RRate20201009.xlsx' #input("Filename: ")
+date_tbl_name = 'tbl_class_responses'
+input_date = dt.date(2020,10,9)
 
 def load_ces_response_rate(date, directory, filename, schema='ces_responses', date_tbl_name='tbl_class_responses'):
   
@@ -55,6 +55,8 @@ def load_ces_response_rate(date, directory, filename, schema='ces_responses', da
     df = df[['level', 'date', 'classkey', 'college', 'school_code',
              'survey_start_date', 'survey_end_date',
              'campus', 'invitations', 'responses']]
+    
+    df = df.loc[df['level'] == sector]
     print(tabulate(df, headers='keys'))
     
     df.to_sql(name='{}'.format(date_tbl_name),
@@ -65,4 +67,4 @@ def load_ces_response_rate(date, directory, filename, schema='ces_responses', da
               )
 
 
-load_ces_response_rate(dt.date(2019, 10, 24), directory, filename, 'ces_responses')
+load_ces_response_rate(input_date, directory, filename, 'ces_responses')

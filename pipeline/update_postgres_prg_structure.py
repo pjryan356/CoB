@@ -11,7 +11,7 @@ import sys
 sys.path.append('c:\\Peter\\GitHub\\CoB\\')
 
 import general.RMIT_colours as rc
-from general.sams_queries import *
+from general.sams_queries import (qry_program_course_structure)
 from general.sams_helper_functions import *
 from general.postgres_queries import (
   qry_delete_after_term)
@@ -45,7 +45,7 @@ try:
 except:
   print(sams_qry)
 
-
+int('df')
 x = postgres_con.execute(qry_delete_after_term(schema='programs',
                                                table='tbl_plan_course_structure',
                                                term_code=None),

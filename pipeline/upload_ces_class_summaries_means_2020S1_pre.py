@@ -37,8 +37,7 @@ postgres_engine = create_engine(engine_string)
 postgres_con = postgres_engine.connect()
 
 # Directory containing files
-directory = 'H:\\Data\\CoB Database\\CES\\2020S1\\'
-
+directory = 'H:\\Projects\\CoB\\CES\\Data\\Prelim 2020 S1\\'
 
 # Function to load:
 #   - Course Offering data; and
@@ -48,7 +47,6 @@ directory = 'H:\\Data\\CoB Database\\CES\\2020S1\\'
 
 def upload_course_data_from_excel(directory, filename, engine,
                                   course_tbl_name='tbl_course_summaries_means',
-                                  class_teacher_tbl_name='tbl_class_teacher_summaries_means',
                                   schema='ces'):
   # gets course ces data split by program from the suuplied excel files and uploads them to postrgres
   df = pd.read_excel(directory + filename,
@@ -84,9 +82,9 @@ def upload_course_data_from_excel(directory, filename, engine,
   # Gather information (year, semester, level) from the filename
   f_split=filename.split('.')[0].split()
   
-  level = f_split[4][1:3] # brackets removed
-  semester = f_split[7][:-1] # comma removed
-  year = f_split[8][:-1] # bracket removed
+  level = 'VE' # brackets removed
+  semester = 1 # comma removed
+  year = 2020 # bracket removed
   
   df['year'] = int(year)
   df['semester'] = int(semester)
@@ -110,7 +108,7 @@ def upload_course_data_from_excel(directory, filename, engine,
 
   # Limit to columns relevant to course (remove section, class, term, teacher)
   df_courses: object = df_courses[[
-    'year', 'semester', 'level',
+    'year', 'semester', 'level', 'school_code',
     'course_code', 'course_code_ces', 'course_code_ces2',
     'course_name',
     'course_coordinator', 'career', 'campus',
@@ -128,9 +126,8 @@ def upload_course_data_from_excel(directory, filename, engine,
               'mgts1', 'mgts2', 'mgts3', 'mgts4', 'mgts5', 'mgts6']] \
     = df_courses[['gts', 'mgts', 'osi', 'mosi',
                   'mgts1', 'mgts2', 'mgts3', 'mgts4', 'mgts5', 'mgts6']].apply(pd.to_numeric, errors='coerce')
-  
-  #print(tabulate(df_courses, headers='keys'))
 
+  print(tabulate(df_courses, headers='keys'))
   # Load into database
   try:
     df_courses.to_sql(
@@ -144,51 +141,6 @@ def upload_course_data_from_excel(directory, filename, engine,
     print('course input failed' + filename)
     pass
   
-
-  # Prepare data for class teacher table
-  # Get all data with a class number
-  df_teacher = df.loc[df['class_nbr'].notnull()]
-
-  # Limit to columns relevant to teacher (GTS only)
-  df_teacher: object = df_teacher[[
-    'year', 'semester', 'level',
-    'course_code', 'course_code_ces', 'course_code_ces2',
-    'class_nbr', 'term_code', 'section_code',
-    'course_name',
-    'teaching_staff',
-    'course_coordinator', 'career', 'campus',
-    'gts_count', 'gts', 'mgts',
-    'mgts1', 'mgts2', 'mgts3', 'mgts4', 'mgts5', 'mgts6'
-  ]]
-
-  # Correct Data types
-  df_teacher = df_teacher.infer_objects()
-
-  df_teacher[['gts', 'mgts',
-              'mgts1', 'mgts2', 'mgts3', 'mgts4', 'mgts5', 'mgts6']] \
-    = df_teacher[['gts', 'mgts',
-                  'mgts1', 'mgts2', 'mgts3', 'mgts4', 'mgts5', 'mgts6']].apply(pd.to_numeric, errors='coerce')
-
-  df_teacher.term_code = df_teacher.term_code.astype(np.int64)
-  df_teacher.class_nbr = df_teacher.class_nbr.astype(np.int64)
-  
-  df_teacher['class_nbr'].apply(str)
-  df_teacher['term_code'].apply(str)
-  
-  # Load into database
-  try:
-    df_teacher.to_sql(
-      name=class_teacher_tbl_name,
-      con=engine,
-      schema=schema,
-      if_exists='append',
-      index=False
-      )
-  except Exception as e:
-    print('teacher input failed' + filename)
-    pass
-  
-  print(df_teacher.iloc[-1])
 
 
 
