@@ -79,7 +79,8 @@ def line_graph_measure_surveys(f_df,
                                start_year=2014,
                                end_year=2018, semester=None,
                                width=540,
-                               height=330):
+                               height=330,
+                               mean=False):
   # all traces for plotly
   traces = []
   
@@ -103,6 +104,14 @@ def line_graph_measure_surveys(f_df,
   label_check = 0
   
   graph_title = ''
+
+  y_range = [-1, 101]
+  if mean:
+    y_range = [0.9, 5.1]
+
+  y_title = 'Percent Agree'
+  if mean:
+    y_title = 'Mean'
   
   for measure in measures:
     graph_title += '{}, '.format(measure.upper())
@@ -174,8 +183,8 @@ def line_graph_measure_surveys(f_df,
              zerolinewidth=2,
            ),
            yaxis=dict(
-             title='Percent Agree',
-             range=[-1, 101],
+             title=y_title,
+             range=y_range,
              ticklen=5,
              zeroline=True,
              zerolinewidth=2,
@@ -199,7 +208,8 @@ def line_graph_program_measure_surveys(df1,
                                        measure='gts',
                                        start_year=2014,
                                        end_year=2018, semester=None,
-                                       width=520, height=320):
+                                       width=520, height=320,
+                                       mean=False):
   f_df = df1.loc[df1['course_code_ces'] == course_code]
   
   # all traces for plotly
@@ -222,6 +232,15 @@ def line_graph_program_measure_surveys(df1,
   
   label_check = 0
   
+  y_range = [-1, 101]
+  if mean:
+    y_range = [0.9, 5.1]
+  
+  
+  y_title = 'Percent Agree'
+  if mean:
+    y_title = 'Mean'
+    
   j = 0
   colours = [rc.RMIT_DarkBlue,
              rc.RMIT_Green,
@@ -261,7 +280,7 @@ def line_graph_program_measure_surveys(df1,
     )
     traces.append(trace)
     j += 1
-
+  
   title = '{} Data by program'.format(measure.upper())
   fig = go.Figure(
     data=traces,
@@ -281,8 +300,8 @@ def line_graph_program_measure_surveys(df1,
         zerolinewidth=2,
       ),
       yaxis=dict(
-        title='Percent Agree',
-        range=[-1, 101],
+        title=y_title,
+        range=y_range,
         ticklen=5,
         zeroline=True,
         zerolinewidth=2,
@@ -301,7 +320,8 @@ def line_graph_gtsq_surveys(f_df,
                             code,
                             start_year, end_year,
                             semester=None, acad_career='HE',
-                            width=540, height=320):
+                            width=540, height=320,
+                            mean=False):
 
   if acad_career == None:
     acad_career = f_df['level'].tolist()[-1]
@@ -338,6 +358,15 @@ def line_graph_gtsq_surveys(f_df,
         y.append(val)
         
     xi = [k-0.175+i/20.0 for k in x]
+
+    y_range = [-1, 101]
+    if mean:
+      y_range = [0.9, 5.1]
+
+    y_title = 'Percent Agree'
+    if mean:
+      y_title = 'Mean'
+    
     trace = go.Scatter(
       x=xi,
       y=y,
@@ -375,8 +404,8 @@ def line_graph_gtsq_surveys(f_df,
              zerolinewidth=2,
            ),
            yaxis=dict(
-             title='Percent Agree',
-             range=[-1, 101],
+             title=y_title,
+             range=y_range,
              ticklen=5,
              zeroline=True,
              zerolinewidth=2,

@@ -5,6 +5,15 @@
 import traceback
 import pandas as pd
 
+
+def objectlist_to_text(obList):
+  # converts a list of object into a string list for sql IN statement
+  txt = "("
+  for ob in obList:
+    txt += "'{}', ".format(ob)
+  txt = txt[:-2] + ")"
+  return txt
+
 def convert_list_string_for_sql(list1):
   txt = '('
   for str in list1:
@@ -58,3 +67,36 @@ def db_extract_query_to_dataframe(sql_query, cur, print_messages=False):
     print(sql_query)
     traceback.print_exc()
     return result
+
+def get_school_name(school_code):
+  if school_code == '610P':
+    return 'CBO'
+  if school_code == '615H':
+    return 'ACCT'
+  if school_code == '620H':
+    return 'BITL'
+  if school_code == '625H':
+    return 'EFM'
+  if school_code == '630H':
+    return 'MGT'
+  if school_code == '650T':
+    return 'VBE'
+  if school_code == '660H':
+    return 'GSBL'
+  if school_code == 'VN':
+    return 'Not CoB'
+  return None
+
+def get_campus_list_string(location):
+  if location == 'MELB':
+    return None
+  
+  if location == 'SIM':
+    return "('SGPIM')"
+  
+  if location in ('CSI', 'SUIBE'):
+    return "('CHNSI')"
+  
+  if location in ('SBM', 'VN'):
+    return "('VNMRH', 'VNMRI')"
+  

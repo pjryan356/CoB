@@ -1,22 +1,16 @@
 ## Update script to upload course details table in local db
-# Peter Ryan Nov 2018
+# Peter Ryan Mar 2020
 
 import datetime as dt
-import psycopg2
-from sqlalchemy import (create_engine, orm)
+from sqlalchemy import (create_engine)
 import pandas as pd
-import tabulate
 
 import sys
 sys.path.append('c:\\Peter\\GitHub\\CoB\\')
 
-import general.RMIT_colours as rc
 from general.sams_queries import *
 from general.sams_helper_functions import *
 from general.postgres_queries import (
-  qry_create_table_course_location,
-  qry_add_comment,
-  qry_drop_table,
   qry_delete_after_term)
 
 # Get inputs
@@ -41,6 +35,43 @@ engine_string = 'postgresql+psycopg2://{}:{}@{}/{}'.format(postgres_user,
 postgres_engine = create_engine(engine_string)
 postgres_con = postgres_engine.connect()
 
+def qry_course_details(st_term='1700', end_term='1900'):
+  qry = '''
+SELECT
+  	course_id,
+	course_code,
+	course_name,
+	term_code,
+	acad_career,
+	school_code,
+	college,
+	campus,
+	LISTAGG(instruction_mode, '; ') WITHIN GROUP (ORDER BY instruction_mode) AS instruction_modes
+FROM (
+	SELECT DISTINCT
+  	cl.crse_id AS course_ID,
+	cl.subject||cl.catalog_nbr AS course_code,
+	cl.descr AS course_name,
+	cl.strm AS term_code,
+	cl.acad_career,
+	cl.acad_org AS school_code,
+	CASE
+	  WHEN cl.acad_group = 'SET' THEN 'SEH'
+	  WHEN cl.acad_group = 'BUS' THEN 'CoBL'
+		ELSE cl.acad_group END AS college,
+	cl.campus,
+	instruction_mode
+
+	FROM ps_class_tbl cl
+	WHERE strm > '1700' AND strm <= '2100'
+		AND enrl_tot > 0
+		AND (acad_group = 'BUS' or  acad_org = '830H')
+	)
+GROUP BY course_id, course_code, course_name, term_code, acad_career, school_code, college, campus
+ORDER BY course_id, course_code, term_code
+'''.format(st_term, end_term)
+  return qry
+
 
 # get data from sams
 sams_qry = qry_course_details(st_term=st_term, end_term=end_term)
@@ -52,16 +83,14 @@ except:
 
 print(len(df))
 
-x = postgres_con.execute(qry_delete_after_term(schema='lookups',
-                                               table='tbl_course_details',
-                                               term_code=st_term),
-                         )
-
-#print(tabulate.tabulate(result_dataframe.iloc[:10], headers='keys'))
+#x = postgres_con.execute(qry_delete_after_term(schema='courses',
+#                                               table='tbl_course_details',
+#                                               term_code=st_term),
+#                         )
 
 df.to_sql(name='tbl_course_details',
           con=postgres_engine,
-          schema='lookups',
+          schema='courses',
           if_exists='append',
           index=False
           )

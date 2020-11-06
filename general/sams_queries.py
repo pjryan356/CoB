@@ -353,4 +353,5 @@ def qry_program_course_structure(program_code=None, active=True):
 
       ORDER BY prg.acad_prog, ams_block_nbr, clist_name, r_course_sequence, course_code
       """
+  print(qry)
   return qry

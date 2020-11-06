@@ -5,46 +5,104 @@ import os
 import xlrd
 from xlutils.copy import copy
 import xlwt
+import pandas as pd
+from tabulate import tabulate
+from sqlalchemy import (create_engine, orm)
 
+year = 2019
+semester = 1
+file_string_check = '(RMIT copy)'
+#
 
+# Create connections
+# create postgres engine this is the connection to the oracle database
+postgres_user = 'pjryan'
+postgres_host = 'localhost'
+postgres_dbname = 'postgres'
+postgres_pw = input("Postgres Password: ")
 
+engine_string = 'postgresql+psycopg2://{}:{}@{}/{}'.format(postgres_user,
+                                                           postgres_pw,
+                                                           postgres_host,
+                                                           postgres_dbname)
+postgres_engine = create_engine(engine_string)
+postgres_con = postgres_engine.connect()
 
+def load_lecture_feedback_to_db(path, filename, engine):
+  # Load workbook
+  try:
+    wb = xlrd.open_workbook(os.path.join(path, filename), on_demand=True)
+  except:
+    print(path + filename + ' failure')
+    return
+  
+  #iterate through sheets
+  for sheet in wb.sheets():
+    
+    # Iterate through columns to account for multiple responses
+    i_col = 0
+    while True:
+      i_col += 1
+      
+      # Load sheet into pd
+      df = pd.read_excel(path + filename,
+                         sheet_name=sheet.name,
+                         skiprows=0,
+                         usecols=[0, i_col],
+                         skipfooter=0)
+
+      # break if column is empty
+      try:
+        df.columns = ['question', 'answer']
+      except:
+        print('{}: Last Column: {}'.format(sheet.name, i_col))
+        break
+      
+      # Add additional columns
+      df['year'] = year
+      df['semester'] = semester
+      df['course_code'] = sheet.name
+      df['comment'] = ''
+      
+      # Reorder columns
+      df: object = df[[
+        'year', 'semester',
+        'course_code', 'question', 'answer', 'comment'
+      ]]
+      
+      # Combine answer and comment into single row
+      i = 0
+      while i <= 10:
+        df.iloc[i, 5] = df.iloc[i+1, 4]
+        i += 2
+      
+      # Move final comment into comment column
+      df.iloc[i, 5] = df.iloc[i, 4]
+      df.iloc[i, 4] = ''
+      
+      # Filter columns to relevant rows
+      df1 = df.loc[df['question'] != 'Comments']
+
+      try:
+        df1.to_sql(
+          name='tbl_lecture_feedback',
+          con=engine,
+          schema='sim_ces',
+          if_exists='append',
+          index=False
+          )
+      except Exception as e:
+        print('comment input failed' + filename)
+        print(e)
+        pass
 
 
 for school in ['Accountancy', 'Econ & Fin', 'Logistics', 'Management & Int Bus', 'Marketing']:
-  path = 'H:\\Data\\SIM\\{0}\\2019S2\\'.format(school)
-
-  # Make target directory
-  targetdir = '{}'.format(path)
-  if not os.path.exists(targetdir):
-    os.makedirs(targetdir)
-
+  path = 'H:\\Data\\SIM\\{0}\\{1}S{2}\\'.format(school, year, semester)
+  
   for root, dir, files in os.walk(path, topdown=False):
     for file in files:
-      load_excel_to_db(root, file, "Lecturers Feedback ", " 2019 July")
+      if file_string_check in file:
+        print(file)
+        load_lecture_feedback_to_db(root, file, postgres_engine)
 
-
-def load_excel_to_db(r, f, targetdir, target_file_start):
-  wb = xlrd.open_workbook(os.path.join(r, f), on_demand=True)
-  
-  # cycle through sheets
-  for sheet in wb.sheets():
-    newwb = copy(wb)  # makes a temp copy of that book
-    # brute force, but strips away all other sheets apart from the sheet being looked at
-    newwb._Workbook__worksheets = [worksheet for worksheet in newwb._Workbook__worksheets if
-                                   worksheet.name == sheet.name]
-    # saves each sheet as the original file name plus the sheet name
-    newwb.save(targetdir + target_file_start + sheet.name + target_file_end + ".xls")
-
-
-df = pd.read_excel(directory + filename,
-                   sheet_name='RMIT Lec',
-                   skiprows=1,
-                   usecols=[6, 7, 8, 9, 11, 16, 17, 18, 19, 20, 21, 22],
-                   skipfooter=0)
-
-df.columns = ['subject', 'catalog', 'course_name', 'section_code', 'teaching_staff',
-              'responses', 'population',
-              'subject_content', 'lecturer_effectiveness', 'course_satisfaction',
-              'comment_type', 'comment_text'
-              ]

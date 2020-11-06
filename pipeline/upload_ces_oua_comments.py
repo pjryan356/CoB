@@ -25,42 +25,43 @@ postgres_con = postgres_engine.connect()
 
 def upload_course_comments_from_excel(directory, filename, engine,
                                       tbl_name='tbl_course_comments',
-                                      schema='ces'):
+                                      schema='ces_oua'):
+  # Use file name for information
+  fn_split = filename.split('_')
+  year = fn_split[2]
+  level = fn_split[3]
+  if fn_split[4] == 'GC':
+    period = fn_split[5]
+  else:
+    period = fn_split[4]
   
-
   # gets ces comments data the suuplied excel files and uploads them to postrgres
+  ## gets the first sheet (sheet_name=0)
   df = pd.read_excel(directory + filename,
-                     sheet_name='BUS',
-                     skiprows=2,
-                     usecols=[0,1,2,3,4,5,6,7],
+                     sheet_name=0,
+                     skiprows=0,
+                     usecols=[0, 1, 2, 3],
                      skipfooter=0)
-
-  df.columns = ['school_code', 'classkey', 'course_name', 'career', 'program_code',
-                'best', 'improve'
+  
+  df.columns = ['classkey', 'course', 'best', 'improve'
                 ]
   
-  f_split = filename.split()
-  
-  year = f_split[3].split('_')[1].split('.')[0]
-  semester = f_split[3].split('_')[0][1]
-  
   df['year'] = int(year)
-  df['semester'] = int(semester)
-
+  df['period'] = period
+  df['level'] = level
+  
   df: object = df[[
-    'year', 'semester',
-    'school_code', 'classkey', 'course_name', 'career', 'program_code',
+    'year', 'period',
+    'level', 'classkey', 'course',
     'best', 'improve'
   ]]
-
-  mask = df.program_code == 'Unknown'
-  df.loc[mask, 'program_code'] = 'UNKNW'
   
   df = df.infer_objects()
-
-  df = df.loc[df['classkey'].notna()]
   
-  #print(tabulate(df, headers='keys'))
+  df = df.loc[df['classkey'].notna()]
+
+  # print(tabulate(df, headers='keys'))
+  
   try:
     df.to_sql(
       name=tbl_name,
@@ -68,23 +69,23 @@ def upload_course_comments_from_excel(directory, filename, engine,
       schema=schema,
       if_exists='append',
       index=False
-      )
+    )
   except Exception as e:
     print('comment input failed' + filename)
     print(e)
     pass
 
-  
+
 # get data from excel doc
 # open template
-directory = 'H:\\Data\\CoB Database\\CES\\comments\\'
-
+directory = 'H:\\Data\\CoB Database\\CES\\OUA\\comments\\'
 
 for filename in os.listdir(directory):
-    if filename.endswith(".xlsx"):
-        print(os.path.join(directory, filename))
-        upload_course_comments_from_excel(directory, filename, postgres_engine)
-        continue
-    else:
-        continue
+  if filename.endswith(".xlsx"):
+    print(os.path.join(directory, filename))
+    upload_course_comments_from_excel(directory, filename, postgres_engine)
+    print(filename)
+    continue
+  else:
+    continue
 

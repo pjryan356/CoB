@@ -37,7 +37,7 @@ postgres_engine = create_engine(engine_string)
 postgres_con = postgres_engine.connect()
 
 # Directory containing files
-directory = 'H:\\Data\\CoB Database\\CES\\Course_program\\Mean\\'
+directory = 'H:\\Data\\CoB Database\\CES\\Course_program\\Mean\\2020 S1\\Mean\\'
 
 # Function to load:
 #   - Course Program data; and

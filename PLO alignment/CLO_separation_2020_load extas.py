@@ -1,14 +1,15 @@
-## Load CES response rate data
-# Data from excel doc place on Course and Student Survey
-#   (https://www.rmit.edu.au/staff/teaching-supporting-students/course-and-student-surveys
-# Place into local database
+## Creates course assessment files for CAC purposes
+# Peter Ryan Nov 2018
 
-import os
 import pandas as pd
+import sys
+import re
+import os
 import psycopg2
 from sqlalchemy import (create_engine, orm)
 from tabulate import tabulate
 
+sys.path.append('c:\\Peter\\GitHub\\CoB\\')
 
 # Create connections
 # create postgres engine this is the connection to the oracle database
@@ -24,22 +25,21 @@ postgres_engine = create_engine(engine_string)
 postgres_con = postgres_engine.connect()
 
 
-
+# open CLOs worksheet
 directory = 'C:\\Peter\\CLOs 2020\\'
-filename = 'load_extras.xlsx'
+clo_filename = 'load_extras.csv'
+master_list = []
 
-# get data xlsx
-clo_df = pd.read_excel(open(directory+filename, 'rb'), converters={'course_id': str})
+df = pd.read_csv(open(directory+clo_filename, 'rb'), "CLO (Alt)", converters={'course_id': str})
 
+#df = pd.DataFrame(master_list, columns = ['course_id', 'clo_nbr', 'clo_text', 'updated'])
 
-print(tabulate(clo_df, headers='keys'))
-
-clo_df.to_sql(name='clo',
+'''
+print(tabulate(df, headers='keys'))
+df.to_sql(name='clo',
             con=postgres_engine,
             schema='courses',
             if_exists='append',
             index=False
           )
-
-
-
+'''
