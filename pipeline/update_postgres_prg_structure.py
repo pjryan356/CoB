@@ -45,12 +45,16 @@ try:
 except:
   print(sams_qry)
 
-int('df')
+'''
 x = postgres_con.execute(qry_delete_after_term(schema='programs',
                                                table='tbl_plan_course_structure',
                                                term_code=None),
                          )
+'''
 
+print(tabulate(df, headers='keys'))
+
+int('d')
 
 df.to_sql(name='tbl_plan_course_structure',
           con=postgres_engine,
